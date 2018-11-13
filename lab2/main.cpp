@@ -171,31 +171,24 @@ TipoRet createTable(string nombreTabla){
 TipoRet dropTable(string nombreTabla){
     TipoRet res = OK;
     extern ABBTabla t;               //Variable tipo listaTabla Global
-    ABBTabla auxTabla = LTabla, borrarTabla;
+    ABBTabla auxTabla = t;
     ListaColum auxColum, borrarColum;
     ListaTupla auxTupla, borrarTupla;
     ListaCelda auxCelda, borrarCelda;
-    while( auxTabla->sig!=NULL ){
-        if( auxTabla->sig->nombre == nombreTabla ){//Busca la tabla a borrar y para una posicion antes
-            auxColum = auxTabla->sig->columna;     //Apunta a las columnas a eliminar
+    if( traerNodoTabla(nombreTabla, auxTabla)!=NULL ){ //Si la tabla existe la trae y si no retorna NULL
+
+            auxColum = auxTabla->columna;     //Apunta a las columnas a eliminar
             borrarColumnasTabla(auxColum); //Borra la lista de columnas de la tabla
-            auxTupla = auxTabla->sig->tupla; //Apunta al comienzo de las tuplas a borrar
+            auxTupla = auxTabla->tupla; //Apunta al comienzo de las tuplas a borrar
             while( auxTupla != NULL ){//Recorro todas las tuplas y borro sus celdas
                 auxCelda = auxTupla->celda; //Apunta a la lista de celdas de la tupla actual
                 borrarCeldasTupla(auxCelda);//Elimina la lista de celdas de la tupla actual
                 auxTupla = auxTupla->sig;   //Avanza a la siguiente tupla
             }
-            auxTupla = auxTabla->sig->tupla; //Apunta al comienzo de las tuplas a borrar
+            auxTupla = auxTabla->tupla; //Apunta al comienzo de las tuplas a borrar
             borrarTuplasTabla(auxTupla);  //Borra todas la tuplas de una tabla
             //Por ultimo borra la tabla
-            borrarTabla = auxTabla->sig;
-            if( auxTabla->sig->sig != NULL ) //Verifica si hay un nodo despues del que voy a borrar
-                auxTabla->sig->sig->ant = auxTabla;
-            auxTabla->sig = auxTabla->sig->sig;
-            delete borrarTabla;
-            return res;
-        }
-        auxTabla = auxTabla->sig;
+            borrarNodoTabla(auxTabla);
     }
     res = ERROR;
     return res;
