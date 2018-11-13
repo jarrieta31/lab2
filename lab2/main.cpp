@@ -240,14 +240,14 @@ TipoRet dropCol(string nombreTabla, string nombreCol){
     TipoRet res = NO_IMPLEMENTADA;
     int nroColBuscada;
     extern ABBTabla t;               //ListaTabla Global
-    ListaTabla auxTabla = LTabla;           //puntero auxiliar tipo ListaTabla
+    ABBTabla auxTabla;           //puntero auxiliar tipo ListaTabla
     ListaColum auxColum;
     ListaColum borraColum;
     ListaTupla auxTupla;
     ListaCelda auxCelda;
     ListaCelda borraCelda;
     /** Busca si existe la tabla **/
-    auxTabla = traerNodoTabla(LTabla, nombreTabla); //si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
+    auxTabla = traerNodoTabla(nombreTabla, t); //si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
     if( auxTabla!=NULL ){
             auxColum = auxTabla->columna;
             while( auxColum->sig != NULL ){  //Recorre la lista de columnas y chequea que no exista una columna con el mismo nombre
