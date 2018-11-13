@@ -521,18 +521,18 @@ TipoRet selectWhere(string nombreTabla2, string condicion, string nombreTabla1){
     string valorFiltro   = traerParametro(listaCondicion,2); //Valor que debe cumplir el filtro
 
     if( nombreTabla1.empty() ){  // Valida que el nombre de la tabla1 no este vacio
-        cout<< "  Falta el nombre de la tabla a copiar"endl;
+        cout<< "  Falta el nombre de la tabla a copiar"<<endl;
         res = ERROR;
         return res;
     }
     if( nombreTabla2.empty() ){ // Valida que el nombre de la tabla2 no este vacio
-        cout<< "  Falto especificar el nombre de la nueva tabla"endl;
+        cout<< "  Falto especificar el nombre de la nueva tabla"<<endl;
         res = ERROR;
         return res;
     }
     else{
-        if( miembro( nombreTabla2 ) ){ //Si el nombre de la tabl2 ya existe retorna error
-            cout<< "  El nombre de la nueva tabla ya existe!"endl;
+        if( miembro( nombreTabla2,t ) ){ //Si el nombre de la tabl2 ya existe retorna error
+            cout<< "  El nombre de la nueva tabla ya existe!"<<endl;
             res = ERROR;
             return res;
         }
