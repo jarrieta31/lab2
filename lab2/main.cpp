@@ -116,12 +116,22 @@ void modificarCelda(ListaCelda &auxCelda, int nroCelda, string nuevoValor);
 
 int main(){
     extern ABBTabla t;
- /*   extern ABBTabla t;
-    LTabla->cantColumnas = 0;
-    LTabla->ant = NULL;
-    LTabla->sig = NULL;
-*/
+
     string comando;
+
+    createTable("Empleados");
+    addCol("Empleados","CI");
+    addCol("Empleados","Nombre");
+    addCol("Empleados", "Apellido");
+    insertInto("Empleados","2345:Juan:Alavarez");
+    insertInto("Empleados","4711:Carlos:Gonzalez");
+    insertInto("Empleados","6545:Alex:Simmer");
+    insertInto("Empleados","7823:Lucas:Garrido");
+    insertInto("Empleados","2731:Agustina:Martinez");
+    insertInto("Empleados","5389:Guillermo:Moreira");
+    insertInto("Empleados","3719:Julio:Arrieta");
+    insertInto("Empleados","4164:Mariano:Castro");
+    printDataTable("Empleados");
 
     while(comando!="exit"){ //mantiene la terminal esperando ordenes
         getline(cin, comando);
@@ -316,7 +326,7 @@ TipoRet deleteFrom(string nombreTabla, string condicion){
     ListaArg listaCondicion = crearListaArg(); //crea una lista con las condiciones
     cargarListaArg(listaCondicion, condicion, operador); // separa ambas partes de la condicion
     string nombreColumna    = traerParametro(listaCondicion,1);
-    string valorCondicion   = traerParametro(listaCondicion,2);
+    string valorFiltro   = traerParametro(listaCondicion,2);
     auxTabla = traerNodoTabla(nombreTabla, t); //si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
     if( auxTabla != NULL){
         int nroColumna = buscarColumna(auxTabla->columna, nombreColumna); //si el nombre de la columna existe retorna su posicion, si no retorna 1000
@@ -326,7 +336,7 @@ TipoRet deleteFrom(string nombreTabla, string condicion){
                 auxCelda = auxTupla->celda;
                 if( operador!='-' ){
                     bool encontrado = false;
-                    encontrado = compararCelda(auxCelda, nroColumna, operador, valorCondicion);
+                    encontrado = compararCelda(auxCelda, nroColumna, operador, valorFiltro);
                     if( encontrado == true ){
                         cout<<"  Registro borrado-> "<< auxCelda->sig->info <<":"<< auxCelda->sig->sig->info<<":"<<auxCelda->sig->sig->sig->info  <<endl;
                         borrarCeldasTupla(auxCelda);
@@ -346,7 +356,7 @@ TipoRet deleteFrom(string nombreTabla, string condicion){
             }
             borrarListaArg(listaCondicion);
             if( regAfectados == 0 ) //Si no ecuentra el valor
-                cout<< "  No existe ninguna celda con el valor \""<<valorCondicion;
+                cout<< "  No existe ninguna celda con el valor \""<<valorFiltro;
             else
                 cout<< "  Registros afectados "<<regAfectados;//Imprime la cantidad de registros afectados si encuentra alguno
             cout<<msjRespuesta<<endl; //Imprime en pantalla la respuesta
@@ -372,8 +382,8 @@ TipoRet update(string nombreTabla, string condicionModificar, string columnaModi
     char operador = traerOperador(condicionModificar); //obtiene el operador de la condicion a buscar
     ListaArg listaCondicion = crearListaArg();           //Crea una lista con las condiciones
     cargarListaArg(listaCondicion, condicionModificar, operador); // Separa ambas partes de la condicion
-    string columnaCondicion = traerParametro(listaCondicion,1);// Nombre de la columna por la cual filtrar
-    string valorCondicion   = traerParametro(listaCondicion,2); //Valor que debe cumplir el filtro
+    string columnaFiltro = traerParametro(listaCondicion,1);// Nombre de la columna por la cual filtrar
+    string valorFiltro   = traerParametro(listaCondicion,2); //Valor que debe cumplir el filtro
     auxTabla = traerNodoTabla(nombreTabla, t); //si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
     if( auxTabla != NULL){
         int nroColumnaMod = buscarColumna(auxTabla->columna, columnaModificar); //si el nombre de la columna existe retorna su posicion, si no retorna 1000
@@ -381,14 +391,13 @@ TipoRet update(string nombreTabla, string condicionModificar, string columnaModi
             cout<<"  No se puede modificar la clave primaria"<<endl;
             return res = ERROR;
         }
-        int nroColumnaCond = buscarColumna(auxTabla->columna, columnaCondicion);
-        if( nroColumnaCond != 1000  && nroColumnaMod != 1000 ){ //Chequea que existan ambas columnas en la tabla
+        int nroColumFiltro = buscarColumna(auxTabla->columna, columnaFiltro);
+        if( nroColumFiltro != 1000  && nroColumnaMod != 1000 ){ //Chequea que existan ambas columnas en la tabla
             auxTupla = auxTabla->tupla->sig; //Puntero auxiliar para recorrer las tuplas
             while( auxTupla!= NULL ){
                 auxCelda = auxTupla->celda;
                 if( operador != '-' ){
-                //if( !columnaCondicion.empty() ){
-                    if( compararCelda( auxCelda, nroColumnaCond, operador, valorCondicion) ){
+                    if( compararCelda( auxCelda, nroColumFiltro, operador, valorFiltro) ){
                         cout<<"  Registro modifcado-> "<< auxCelda->sig->info<<":"<< auxCelda->sig->sig->info<<":"<<auxCelda->sig->sig->sig->info<<endl;
                         modificarCelda( auxCelda, nroColumnaMod, valorModificar);
                         regAfectados++;
@@ -503,8 +512,47 @@ void mostrarAyuda(){
 }
 
 TipoRet selectWhere(string nombreTabla2, string condicion, string nombreTabla1){
+    TipoRet res = NO_IMPLEMENTADA;
+    extern ABBTabla t;
+    char operador = traerOperador(condicion);           //obtiene el operador de la condicion a buscar
+    ListaArg listaCondicion = crearListaArg();           //Crea una lista con las condiciones
+    cargarListaArg(listaCondicion, condicion, operador); // Separa ambas partes de la condicion
+    string columnaFiltro = traerParametro(listaCondicion,1);// Nombre de la columna por la cual filtrar
+    string valorFiltro   = traerParametro(listaCondicion,2); //Valor que debe cumplir el filtro
+
+    if( nombreTabla1.empty() ){  // Valida que el nombre de la tabla1 no este vacio
+        cout<< "  Falta el nombre de la tabla a copiar"endl;
+        res = ERROR;
+        return res;
+    }
+    if( nombreTabla2.empty() ){ // Valida que el nombre de la tabla2 no este vacio
+        cout<< "  Falto especificar el nombre de la nueva tabla"endl;
+        res = ERROR;
+        return res;
+    }
+    else{
+        if( miembro( nombreTabla2 ) ){ //Si el nombre de la tabl2 ya existe retorna error
+            cout<< "  El nombre de la nueva tabla ya existe!"endl;
+            res = ERROR;
+            return res;
+        }
+    }
+    ABBTabla auxTabla1 = traerNodoTabla(nombreTabla1,t); //Trae el nodo de la tabla1
+    if( auxTabla1 != NULL ){ //Valida si la tabla1 existe
+        int nroColumna = buscarColumna( columnaFiltro ); //Si la columna existe retorna su nro. y si no existe retorna 1000
+        if( nroColumna != 1000 ){
+
+            res = OK;
+            return res;alto especificar el nombre de la nueva tabla
+        }
+
+    }
+     //Si la tabla1 no existe retorna error
+    res = ERROR;
+    return res;
 
 }
+
 
 TipoRet select(string nombreTabla2, string valoresColumnas, string nombreTabla1){
     TipoRet res = OK;
