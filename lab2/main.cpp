@@ -507,7 +507,17 @@ TipoRet selectWhere(string nombreTabla2, string condicion, string nombreTabla1){
 }
 
 TipoRet select(string nombreTabla2, string valoresColumnas, string nombreTabla1){
-
+    TipoRet res = OK;
+    extern ABBTabla t;
+    ListaArg listaColumnas = crearListaArg();
+    cargarListaArg(listaColumnas, valoresColumnas,':');//Guarda los nombres de las columnas en la lista
+///////////// Lo que esta aqui dentro es para que pruebes los parametros que llegan ////////////
+    cout<<"La tabla2 es-> "<<nombreTabla2<<endl;
+    cout<<"La tabla1 es-> "<<nombreTabla1<<endl;
+    cout<<"Y las columnas que pasaste son: "<<endl;
+    imprimirArg(listaColumnas);
+    cout<<"La cantidad de columnas que paseste es-> "<<lengthArg(listaColumnas); //Podes hacer un for con la cantidad de columnas
+///////////////////////////////////////////////////////////////////////////////////
 }
 
 TipoRet join(string nombreTabla1, string nombreTabla2, string nombreaTabla3){//Junta la tabla 1 con la 2 y forman la 3
@@ -522,7 +532,7 @@ TipoRet printTables(){
 /****************   LEE EL INGRESO DE LOS COMANDOS   ***********************/
 void leerComando(ABBTabla t, string comando){
     TipoRet res;
-    string caracter;
+    string caracter, nombreTabla, columnas, tabla1, tabla2, tabla3, condicion;
     int nroComas =0;
     int nroArg=0;
     for (int i=0; i<comando.length(); ++i){ // Borra todos los espacios en blanco, cuenta las comas y los dos puntos
@@ -544,47 +554,51 @@ void leerComando(ABBTabla t, string comando){
     ListaArg listaArg = crearListaArg();
     cargarListaArg(listaArg, allArg, ',');
 
-    string nombreTabla = traerParametro(listaArg,1); //Obtiene el nombre de la tabla
-
     if( sentencia=="selectWhere" ){
-        string tabla1;
-        string tabla2;
-        string condicion;
+        tabla1 = traerParametro(listaArg, 3);
+        tabla2 = traerParametro(listaArg,1);
+        condicion = traerParametro(listaArg, 2);
         res = selectWhere(tabla2, condicion, tabla1);
         if( res == 0 )
             cout<< "  Query OK -> Se copio la tabla \""<<tabla1<<"\" en la tabla \""<<tabla2<<"\""<<endl<<endl;
         if( res == 1)
             cout<< "  Query ERROR -> Al copiar la tabla \""<<tabla1<<"\""<<endl<<endl;
+        return;
     }
 
     if( sentencia=="select" ){ //createTable( nombreTabla )
-        string tabla1;
-        string tabla2;
-        string columnas;
+        tabla1 = traerParametro(listaArg,3);
+        tabla2 = traerParametro(listaArg,1);
+        columnas = traerParametro(listaArg,2);
         res = select(tabla2, columnas, tabla1);
         if( res == 0 )
             cout<< "  Query OK -> Se copio la tabla \""<<tabla1<<"\" en la tabla \""<<tabla2<<"\""<<endl<<endl;
         if( res == 1)
             cout<< "  Query ERROR -> Al copiar la tabla \""<<tabla1<<"\""<<endl<<endl;
+        return;
     }
 
     if( sentencia=="join" ){
-        string tabla1;
-        string tabla2;
+        tabla1 = traerParametro(listaArg,1);
+        tabla2 = traerParametro(listaArg,2);
+        tabla3 = traerParametro(listaArg,3);
         string tabla3;
         res = selectWhere(tabla1, tabla2, tabla3);
         if( res == 0 )
             cout<< "  Query OK -> Tabla \""<<tabla1<<"\" se junto con \""<<tabla2<<"\""<<endl<<endl;
         if( res == 1)
             cout<< "  Query ERROR -> Al crear la tabla \""<<tabla3<<"\""<<endl<<endl;
+        return;
     }
 
     if( sentencia=="createTable" ){
+        nombreTabla = traerParametro(listaArg,1);
         res = createTable(nombreTabla);
         if( res == 0 )
             cout<< "  Query OK -> Se creo la tabla \""<<nombreTabla<<"\""<<endl<<endl;
         if( res == 1)
             cout<< "  Query ERROR -> La tabla "<<nombreTabla<<" ya existe"<<endl<<endl;
+        return;
     }
 
     if( sentencia=="printTables" ){
@@ -593,17 +607,21 @@ void leerComando(ABBTabla t, string comando){
             cout<< "  Query OK"<<endl<<endl;
         if( res == 1)
             cout<< "  Query ERROR"<<endl<<endl;
+        return;
     }
 
     if( sentencia=="dropTable" ){ // dropTable( nombreTabla )
+        nombreTabla = traerParametro(listaArg,1);
         res = dropTable(nombreTabla);
         if( res == 0 )
             cout<< "  Query OK -> La Tabla \""<<nombreTabla<<"\" fue eliminada"<<endl<<endl;
         if( res == 1 )
             cout<< "  Query ERROR -> La tabla \""<<nombreTabla<<"\" no existe"<<endl<<endl;
+        return;
     }
 
     if( sentencia == "addCol" ) {//addCol( nombreTabla, nombreCol )
+        nombreTabla = traerParametro(listaArg,1);
         string nombreColumna = traerParametro(listaArg, 2);//obtiene e nombre de la columna ha agregar
         res = addCol(nombreTabla, nombreColumna);
         if(  res == 0 )
@@ -612,9 +630,11 @@ void leerComando(ABBTabla t, string comando){
             cout<< "  Query ERROR -> No se puedo crear la columna \""<<nombreColumna<<"\""<<endl<<endl;
         if( res == 2 )
             cout<< "  Query ERROR -> No se realizo la operacion"<<endl<<endl;
+        return;
     }
 
     if( sentencia == "dropCol" ){ //   dropCol( nombreTabla, nombreCol)
+        nombreTabla = traerParametro(listaArg,1);
         string nombreColumna = traerParametro(listaArg, 2);
         res = dropCol(nombreTabla, nombreColumna);
         if(  res == 0 )
@@ -623,9 +643,11 @@ void leerComando(ABBTabla t, string comando){
             cout<< "  Query ERROR -> No se puedo eliminar la columna \""<<nombreColumna<<"\""<<endl<<endl;
         if( res == 2 )
             cout<< "  Query ERROR -> No se realizo la operacion"<<endl<<endl;
+        return;
     }
 
     if( sentencia == "insertInto" ){// insertInto( nombreTabla,valoresTupla")
+        nombreTabla = traerParametro(listaArg,1);
         string valoresTupla = traerParametro(listaArg, 2);
         res = insertInto(nombreTabla, valoresTupla);
         if(  res == 0 )
@@ -634,9 +656,11 @@ void leerComando(ABBTabla t, string comando){
             cout<< "  Query ERROR -> No se puedo agregar el registro en la tabla \""<<nombreTabla<<"\""<<endl<<endl;
         if( res == 2 )
             cout<< "  Query ERROR -> No se realizo la operacion"<<endl<<endl;
+        return;
 
     }
     if( sentencia == "deleteFrom" ){ //deleteFrom( nombreTabla, condicionEliminar )
+        nombreTabla = traerParametro(listaArg,1);
         string condicionEliminar = traerParametro(listaArg, 2);
         res = deleteFrom(nombreTabla, condicionEliminar);
         if(  res == 0 )
@@ -645,9 +669,11 @@ void leerComando(ABBTabla t, string comando){
             cout<< "  Query ERROR -> Se produjo un error al intentar eliminar registros"<<endl<<endl;
         if( res == 2 )
             cout<< "  Query ERROR -> No se realizo la operacion"<<endl<<endl;
+        return;
 
     }
     if( sentencia == "update" ){ // update( nombreTabla, condicionModificar, columnaModificar, valorModificar)
+        nombreTabla = traerParametro(listaArg,1);
         string condModificar = traerParametro(listaArg, 2);
         string columna = traerParametro(listaArg, 3);
         string valoModificar = traerParametro(listaArg, 4);
@@ -658,19 +684,23 @@ void leerComando(ABBTabla t, string comando){
             cout<< "  Query ERROR -> Error al actulizar el registro"<<endl<<endl;
         if( res == 2 )
             cout<< "  Query ERROR -> No se realizo la operacion"<<endl<<endl;
+        return;
     }
 
     if( sentencia == "printDataTable" ){  // printDataTable( nombreTabla );
+        nombreTabla = traerParametro(listaArg,1);
         res = printDataTable(nombreTabla);
         if( res == 0 )
             cout<< "  Query OK"<<endl<<endl;
         if( res == 1 )
             cout<< "  Query ERROR -> No se pudo mostrar la tabla\""<< nombreTabla <<"\""<<endl<<endl;
+        return;
     }
     if( sentencia == "help"  )//  mostrarAyuda()
         mostrarAyuda();
     if( sentencia!="join" && sentencia!="printTables" && sentencia!="select" && sentencia!="selectWhere" && sentencia!="createTable" && sentencia!="dropTable" && sentencia!="addCol" && sentencia!="dropCol" && sentencia!="insertInto" && sentencia!="deleteFrom" && sentencia!="update" && sentencia!="printDataTable" && sentencia!="help" && sentencia!="exit" )
         cout << "  ¡EL comando '" << comando <<"' no es valido!"<<endl<<endl;
+
 }
 
 //Obtiene el parametro en la posicion n de la lista. Nota: debe recibir un n valido
