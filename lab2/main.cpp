@@ -299,11 +299,11 @@ TipoRet dropCol(string nombreTabla, string nombreCol){
 TipoRet insertInto(string nombreTabla, string valoresTupla){
     TipoRet res = OK;
     extern ABBTabla t;                           //ListaTabla Global
-    ListaTabla auxTabla = NULL;
+    ABBTabla auxTabla;
     ListaTupla auxTupla = NULL;
     ListaArg listaValores = crearListaArg();            //crea una lista de valores para recibir los argumentos
     cargarListaArg(listaValores, valoresTupla, ':');    //carga los valores en una lista
-    auxTabla = traerNodoTabla(LTabla, nombreTabla); //si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
+    auxTabla = traerNodoTabla(nombreTabla, t); //si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
     if( auxTabla != NULL){
         if( auxTabla->cantColumnas == lengthArg(listaValores) ){//Chequea si la cantidad de valores pasados es igual a los campos que tiene a tabla
             auxTupla = auxTabla->tupla;
