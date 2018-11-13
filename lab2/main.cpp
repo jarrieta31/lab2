@@ -325,7 +325,7 @@ TipoRet insertInto(string nombreTabla, string valoresTupla){
 TipoRet deleteFrom(string nombreTabla, string condicion){
     TipoRet res = OK;
     extern ABBTabla t;               //ListaTabla Global
-    ListaTabla auxTabla = NULL;                //Tabla auxiliar
+    ABBTabla auxTabla;                //Tabla auxiliar
     ListaTupla auxTupla = NULL;
     ListaCelda auxCelda = NULL;
     string msjRespuesta;                    //Respuesta a retornar
@@ -335,7 +335,7 @@ TipoRet deleteFrom(string nombreTabla, string condicion){
     cargarListaArg(listaCondicion, condicion, operador); // separa ambas partes de la condicion
     string nombreColumna    = traerParametro(listaCondicion,1);
     string valorCondicion   = traerParametro(listaCondicion,2);
-    auxTabla = traerNodoTabla(LTabla, nombreTabla); //si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
+    auxTabla = traerNodoTabla(nombreTabla, t); //si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
     if( auxTabla != NULL){
         int nroColumna = buscarColumna(auxTabla->columna, nombreColumna); //si el nombre de la columna existe retorna su posicion, si no retorna 1000
         if( nroColumna != 1000 ){ //Chequea que exista la columna
@@ -383,7 +383,7 @@ TipoRet deleteFrom(string nombreTabla, string condicion){
 TipoRet update(string nombreTabla, string condicionModificar, string columnaModificar, string valorModificar ){
     TipoRet res = OK;
     extern ABBTabla t;               //ListaTabla Global
-    ListaTabla auxTabla = NULL;             //Tabla auxiliar
+    ABBTabla auxTabla;             //Tabla auxiliar
     ListaTupla auxTupla = NULL;
     ListaCelda auxCelda = NULL;
     int regAfectados   = 0;                //Cuenta los registros afectados
@@ -392,7 +392,7 @@ TipoRet update(string nombreTabla, string condicionModificar, string columnaModi
     cargarListaArg(listaCondicion, condicionModificar, operador); // Separa ambas partes de la condicion
     string columnaCondicion = traerParametro(listaCondicion,1);// Nombre de la columna por la cual filtrar
     string valorCondicion   = traerParametro(listaCondicion,2); //Valor que debe cumplir el filtro
-    auxTabla = traerNodoTabla(LTabla, nombreTabla); //si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
+    auxTabla = traerNodoTabla(nombreTabla, t); //si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
     if( auxTabla != NULL){
         int nroColumnaMod = buscarColumna(auxTabla->columna, columnaModificar); //si el nombre de la columna existe retorna su posicion, si no retorna 1000
         if( nroColumnaMod == 1 ){
