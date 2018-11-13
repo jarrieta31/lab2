@@ -144,28 +144,10 @@ TipoRet createTable(string nombreTabla){
         return res;
     }
     else{   //Si noo existe crea el nuevo nodo tabla
-        obtenerPosicion(auxTabla, nombreTabla );//Obtiene la ubicacion para la nueva tabla segun su nombre
-        insertNodoTabla(auxTabla, nombreTabla);//Recibe el nombre de una tabla y la crea en la posicion correcta
+        //obtenerPosicion(auxTabla, nombreTabla );//Obtiene la ubicacion para la nueva tabla segun su nombre
+        insertNodoTabla(t, nombreTabla);//Recibe el nombre de una tabla y la crea en la posicion correcta
+        return res;
     }
-
-    //Crea la columna dummy en la tabla nueva
-    ListaColum nuevaColum = new nodoListaColum;//Columna dummy
-    nuevaColum->ant = NULL;
-    nuevaColum->sig = NULL;
-    auxTabla->columna = nuevaColum;
-    //Crea la tupla dummy en la tabla nueva
-    ListaTupla nuevaTupla = new nodoListaTupla;//Tupla dummy
-    nuevaTupla->ant = NULL;
-    nuevaTupla->sig = NULL;
-    nuevaTupla->indice = 0;
-    auxTabla->tupla = nuevaTupla;
-    //Crea la celda dummy en la tupla
-    ListaCelda nuevaCelda = new nodoListaCelda;
-    nuevaCelda->ant = NULL;
-    nuevaCelda->sig = NULL;
-    nuevaCelda->nroCelda = 0;
-    auxTabla->tupla->celda = nuevaCelda;
-    return res;
 }
 
 TipoRet dropTable(string nombreTabla){
@@ -436,52 +418,49 @@ TipoRet update(string nombreTabla, string condicionModificar, string columnaModi
 TipoRet printDataTable(string nombreTabla){
     TipoRet res = OK;
     extern ABBTabla t;               //ListaTabla Global
-    ListaTabla auxTabla = LTabla;
-    while( auxTabla!=NULL ){
-        if( auxTabla->nombre == nombreTabla ){ //Si existe la tabla, para apuntando sobre ella
-                cout<<"  Tabla "<<auxTabla->nombre<<endl;
-                ListaColum auxColum = auxTabla->columna; //Puntero auxiliar para recorrer las columnas
-                /** Recorre la lista campos */
-                while( auxColum->sig != NULL ){ //Recorre la lista de columnas y chequea que no exista una columna con el mismo nombre
-                    auxColum = auxColum->sig;
-                    if( auxColum->ant->ant == NULL )
-                        cout<<"  "<< auxColum->nombre;
-                    if( auxColum->nroColum > 1 && auxColum->sig != NULL )
-                        cout<<":"<< auxColum->nombre;
-                    if( auxColum->sig == NULL && auxColum->nroColum > 1){
-                        cout<<":"<< auxColum->nombre <<endl;
-                        continue;
+    ABBTabla auxTabla = traerNodoTabla(nombreTabla, t);
+    if( auxTabla!=NULL ){
+        cout<<"  Tabla "<<auxTabla->nombre<<endl;
+        ListaColum auxColum = auxTabla->columna; //Puntero auxiliar para recorrer las columnas
+        /** Recorre la lista campos */
+        while( auxColum->sig != NULL ){ //Recorre la lista de columnas y chequea que no exista una columna con el mismo nombre
+            auxColum = auxColum->sig;
+            if( auxColum->ant->ant == NULL )
+                cout<<"  "<< auxColum->nombre;
+            if( auxColum->nroColum > 1 && auxColum->sig != NULL )
+                cout<<":"<< auxColum->nombre;
+            if( auxColum->sig == NULL && auxColum->nroColum > 1){
+                cout<<":"<< auxColum->nombre <<endl;
+                continue;
                     }
-                    if( auxColum->sig == NULL )
+            if( auxColum->sig == NULL )
                         cout<<endl;
-                }
-                /** Recorre la lista tuplas (resgistros)*/
-                ListaTupla auxTupla = auxTabla->tupla;   // puntero que apunta a la celda dummy de la lista tuplas
-                ListaCelda auxCelda;
-                auxCelda = NULL;
-                while( auxTupla->sig != NULL ){         //Recorre la lista de tuplas
-                    auxTupla = auxTupla->sig;
-                    auxCelda = auxTupla->celda;  //Puntero que apunta a ListaCelda dummy de la tupla actual
-                    /** Recorre las celdas dentro de una tupla */
-                    while( auxCelda->sig != NULL ){
-                        auxCelda = auxCelda->sig;
-                        if( auxCelda->ant->ant == NULL )
-                            cout<<"  "<< auxCelda->info;
-                        if( auxCelda->nroCelda > 1 && auxCelda->sig != NULL )
-                            cout<<":"<< auxCelda->info;
-                        if( auxCelda->sig == NULL && auxCelda->nroCelda > 1){
-                            cout<<":"<< auxCelda->info <<endl;
-                            continue;
-                        }
-                        if( auxCelda->sig == NULL )
-                            cout<<endl;
-
-                    }
-                }
-                return res;
-        }else{
-            auxTabla = auxTabla->sig;
         }
+        /** Recorre la lista tuplas (resgistros)*/
+        ListaTupla auxTupla = auxTabla->tupla;   // puntero que apunta a la celda dummy de la lista tuplas
+        ListaCelda auxCelda;
+        auxCelda = NULL;
+        while( auxTupla->sig != NULL ){         //Recorre la lista de tuplas
+            auxTupla = auxTupla->sig;
+            auxCelda = auxTupla->celda;  //Puntero que apunta a ListaCelda dummy de la tupla actual
+            /** Recorre las celdas dentro de una tupla */
+            while( auxCelda->sig != NULL ){
+                auxCelda = auxCelda->sig;
+                if( auxCelda->ant->ant == NULL )
+                    cout<<"  "<< auxCelda->info;
+                if( auxCelda->nroCelda > 1 && auxCelda->sig != NULL )
+                    cout<<":"<< auxCelda->info;
+                if( auxCelda->sig == NULL && auxCelda->nroCelda > 1){
+                    cout<<":"<< auxCelda->info <<endl;
+                    continue;
+                }
+                if( auxCelda->sig == NULL )
+                    cout<<endl;
+
+            }
+        }
+        return res;
+
     }
     cout<<"  La tabla \""<<nombreTabla<<"\" no existe."<<endl;
     res = ERROR;
@@ -523,8 +502,25 @@ void mostrarAyuda(){
     cout << " Orden: printDataTable(Clientes)"<<endl<<endl;
 }
 
+TipoRet selectWhere(string nombreTabla2, string condicion, string nombreTabla1){
+
+}
+
+TipoRet select(string nombreTabla2, string valoresColumnas, string nombreTabla1){
+
+}
+
+TipoRet join(string nombreTabla1, string nombreTabla2, string nombreaTabla3){//Junta la tabla 1 con la 2 y forman la 3
+
+}
+
+TipoRet printTables(){
+    extern ABBTabla t;
+    imprimirArbol(t);
+}
+
 /****************   LEE EL INGRESO DE LOS COMANDOS   ***********************/
-void leerComando(ListaTabla LTabla, string comando){
+void leerComando(ABBTabla t, string comando){
     TipoRet res;
     string caracter;
     int nroComas =0;
@@ -673,7 +669,7 @@ void leerComando(ListaTabla LTabla, string comando){
     }
     if( sentencia == "help"  )//  mostrarAyuda()
         mostrarAyuda();
-    if(sentencia!="createTable" && sentencia!="dropTable" && sentencia!="addCol" && sentencia!="dropCol" && sentencia!="insertInto" && sentencia!="deleteFrom" && sentencia!="update" && sentencia!="printDataTable" && sentencia!="help" && sentencia!="exit" )
+    if( sentencia!="join" && sentencia!="printTables" && sentencia!="select" && sentencia!="selectWhere" && sentencia!="createTable" && sentencia!="dropTable" && sentencia!="addCol" && sentencia!="dropCol" && sentencia!="insertInto" && sentencia!="deleteFrom" && sentencia!="update" && sentencia!="printDataTable" && sentencia!="help" && sentencia!="exit" )
         cout << "  ¡EL comando '" << comando <<"' no es valido!"<<endl<<endl;
 }
 
@@ -1124,13 +1120,30 @@ bool miembro(string x, ABBTabla t){ //Chequea si un elemento pertenece al ABBTab
 }
 
 ABBTabla crearNodoTabla(string nombre, ABBTabla nodoPadre){ //Crea un nodo de tipo tabla
-    ABBTabla nuevo = new nodoABBTabla;
-    nuevo->izq = NULL;
-    nuevo->der = NULL;
-    nuevo->cantColumnas = 0;
-    nuevo->padre = nodoPadre;
-    nuevo->nombre= nombre;
-    return nuevo;
+    ABBTabla nuevaTabla = new nodoABBTabla;
+    nuevaTabla->izq = NULL;
+    nuevaTabla->der = NULL;
+    nuevaTabla->cantColumnas = 0;
+    nuevaTabla->padre = nodoPadre;
+    nuevaTabla->nombre= nombre;
+    //Crea la columna dummy en la tabla nueva
+    ListaColum nuevaColum = new nodoListaColum;//Columna dummy
+    nuevaColum->ant = NULL;
+    nuevaColum->sig = NULL;
+    nuevaTabla->columna = nuevaColum;
+    //Crea la tupla dummy en la tabla nueva
+    ListaTupla nuevaTupla = new nodoListaTupla;//Tupla dummy
+    nuevaTupla->ant = NULL;
+    nuevaTupla->sig = NULL;
+    nuevaTupla->indice = 0;
+    nuevaTabla->tupla = nuevaTupla;
+    //Crea la celda dummy en la tupla
+    ListaCelda nuevaCelda = new nodoListaCelda;
+    nuevaCelda->ant = NULL;
+    nuevaCelda->sig = NULL;
+    nuevaCelda->nroCelda = 0;
+    nuevaTabla->tupla->celda = nuevaCelda;
+    return nuevaTabla;
 }
 
 void insertDer( string nombre, ABBTabla &t){
