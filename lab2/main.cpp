@@ -197,10 +197,10 @@ TipoRet dropTable(string nombreTabla){
 TipoRet addCol(string nombreTabla, string nombreCol){
     TipoRet res = NO_IMPLEMENTADA;
     extern ABBTabla t;               //ListaTabla Global
-    ListaTabla auxTabla = LTabla;
+    ABBTabla auxTabla;
     ListaColum auxColum = NULL;
     ListaColum nuevaColum = NULL;
-    auxTabla = traerNodoTabla(); //Si existe la tabla, se para apuntando sobre ella
+    auxTabla = traerNodoTabla(nombreTabla,t); //Si existe la tabla, se para apuntando sobre ella
     if( auxTabla!=NULL ){
         if( auxTabla->tupla->sig == NULL ){ // Chequea que la tabla no tenga ningun registro cargado **/
             auxColum = auxTabla->columna; //Puntero auxiliar para recorrer las columnas
