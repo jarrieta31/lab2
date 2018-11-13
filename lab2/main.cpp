@@ -25,34 +25,48 @@ struct nodoListaCelda{
 typedef nodoListaCelda * ListaCelda;
 
 struct nodoListaColum{
-	string nombre;
-	bool PK;
-	int nroColum;
-	nodoListaColum * ant;
-	nodoListaColum * sig;
+    string nombre;
+    bool PK;
+    int nroColum;
+    nodoListaColum * ant;
+    nodoListaColum * sig;
 };
 typedef nodoListaColum * ListaColum;
 
 struct  nodoListaTupla{
-	int indice;
-	ListaCelda celda;
-	nodoListaTupla * ant;
-	nodoListaTupla * sig;
+    int indice;
+    ListaCelda celda;
+    nodoListaTupla * ant;
+    nodoListaTupla * sig;
 };
 typedef nodoListaTupla * ListaTupla;
 
-struct nodoListaTabla{
+struct nodoABBTabla{
     string nombre;
     int cantColumnas;
     ListaColum columna;
     ListaTupla tupla;
-    nodoListaTabla * ant;
-    nodoListaTabla * sig;
+    nodoABBTabla * padre;
+    nodoABBTabla * izq;
+    nodoABBTabla * der;
 };
-typedef nodoListaTabla * ListaTabla;
+typedef nodoABBTabla * ABBTabla;
+
+//* Funciones para tablas (ABBTabla) **//
+ABBTabla crearNodoABBTabla(string nombre); //Crea una nueva tabla con el nombre recibido
+ABBTabla obtenerPosicion(ABBTabla &t, string nombre);//Recorre en orden y devuelve el puntero a un elemento dado
+void imprimirArbol( ABBTabla t); //Recorre en orden y muestra los elementos en pantalla
+bool miembro(string x, ABBTabla t); //Chequea si un elemento pertenece al ABBTabla
+void insertDer(ABBTabla &t, string nombre);//Inserta un nodo a la derecha
+void insertIzq(ABBTabla &t, string nombre);//Inserta un nodo a la izquierda
+void insertNodoTabla(ABBTabla &t, string nombre);
+void borrarNodoTabla(ABBTabla nodoEliminar); //Eliminar el nodo (tabla) recibido del arbol
+ABBTabla obtenerMinimo(ABBTabla t);//retorna el nodo mas a la izquierda
+void reemplazar(ABBTabla nodo1, ABBTabla nodo2);//Funcion para reemplazar el nodo1 por el nodo2 **/
+ABBTabla traerNodoTabla(string nombre, ABBTabla &t);//Busca el nodo por el nombre y lo retorna lo retorna NULL si no lo encuentra
 
 //**** GLOBALES *****//
-ListaTabla LTabla = new nodoListaTabla;
+ABBTabla t = NULL;
 
 //** OPERACIONES ***/
 TipoRet createTable(string nombreTabla);
@@ -63,9 +77,13 @@ TipoRet insertInto(string nombreTabla, string valoresTupla);
 TipoRet deleteFrom(string nombreTabla, string condicionEliminar);
 TipoRet update(string nombreTabla, string condicionModificar, string columnaModificar, string valorModificar );
 TipoRet printDataTable(string nombreTabla);
+TipoRet selectWhere(string nombreTabla2, string condicion, string nombreTabla1);
+TipoRet select(string nombreTabla2, string valoresColumnas, string nombreTabla1);
+TipoRet join(string nombreTabla1, string nombreTabla2, string nombreaTabla3);//Junta la tabla 1 con la 2 y forman la 3
+TipoRet printTables();
 
 /** FUNCIONES Y PROCEDIMIENTOS AUXILIARES */
-void leerComando(ListaTabla T, string comando ); //Interpreta el comando de entrada
+void leerComando(ABBTabla t, string comando ); //Interpreta el comando de entrada
 void mostrarAyuda(); // Imprime la Ayuda con los comandos validos
 string traerParametro(ListaArg L, int n);  //Trae del a posicion n un valor tipo string de la lista de parametros
 ListaArg crearListaArg();               //Crea una lista para guardar parametros
@@ -73,7 +91,7 @@ void imprimirArg(ListaArg L);           //Imprime los argumentos de la lista
 void borrarListaArg(ListaArg &L);
 void agregarArg(ListaArg L, string arg); //Agrega un nuevo parametro al final de la lista de parametros
 void cargarListaArg(ListaArg L, string allArg, char separador);
-ListaTabla buscarTabla(ListaTabla &LTabla, string nombreTabla); //Si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
+//ListaTabla traerNodoTabla(ABBTabla &t, string nombreTabla); //Si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
 int buscarColumna(ListaColum L, string nombreColum); //Busca una columna por su nombre y retorna su posicion
 bool compararCelda(ListaCelda L, int nroCelda, char operador, string valor); //compara celdas y retorna un boolean
 bool buscarTuplaPorPK(ListaTupla &sonda, string pk);//Recibe la pk y busca la tupla que lo tenga, si no esta devuelve NULL
@@ -96,20 +114,19 @@ void borrarTuplasTabla(ListaTupla &auxTupla); //Borra todas las tuplas de una ta
 bool comienzaCon(string valor, string datoCelda); //Comprueba si el dato de una celda comienda con un determinado valor
 void modificarCelda(ListaCelda &auxCelda, int nroCelda, string nuevoValor);
 
-int test = 0;
-
 int main(){
-    extern ListaTabla LTabla;
+    extern ABBTabla t;
+ /*   extern ABBTabla t;
     LTabla->cantColumnas = 0;
     LTabla->ant = NULL;
     LTabla->sig = NULL;
-
+*/
     string comando;
 
     while(comando!="exit"){ //mantiene la terminal esperando ordenes
         getline(cin, comando);
         if( comando.empty()!=true )
-            leerComando(LTabla, comando);
+            leerComando(t, comando);
         else
             cout << "  No ha ingresado ningun comando" <<endl;
     }
@@ -120,45 +137,41 @@ int main(){
 
 TipoRet createTable(string nombreTabla){
     TipoRet res = OK;
-    extern ListaTabla LTabla;               //ListaTabla Global
-    ListaTabla aux = LTabla;
-    while( aux->sig!=NULL ){
-        if( aux->sig->nombre == nombreTabla ){//Valida si la tabla ya existe
-            res = ERROR;
-            return res;
-        }else{
-            aux = aux->sig;
-        }
+    extern ABBTabla t;               //ABBTabla Global
+    ABBTabla auxTabla = t;
+    if( miembro(nombreTabla,t) ){ //Si la tabla existe retorna error
+        res = ERROR;
+        return res;
     }
-    ListaTabla nuevaTabla = new nodoListaTabla;
-    nuevaTabla->nombre = nombreTabla;
-    nuevaTabla->sig = NULL;
-    aux->sig = nuevaTabla;
-    nuevaTabla->ant = aux;
+    else{   //Si noo existe crea el nuevo nodo tabla
+        obtenerPosicion(auxTabla, nombreTabla );//Obtiene la ubicacion para la nueva tabla segun su nombre
+        insertNodoTabla(auxTabla, nombreTabla);//Recibe el nombre de una tabla y la crea en la posicion correcta
+    }
+
     //Crea la columna dummy en la tabla nueva
     ListaColum nuevaColum = new nodoListaColum;//Columna dummy
     nuevaColum->ant = NULL;
     nuevaColum->sig = NULL;
-    nuevaTabla->columna = nuevaColum;
+    auxTabla->columna = nuevaColum;
     //Crea la tupla dummy en la tabla nueva
     ListaTupla nuevaTupla = new nodoListaTupla;//Tupla dummy
     nuevaTupla->ant = NULL;
     nuevaTupla->sig = NULL;
     nuevaTupla->indice = 0;
-    nuevaTabla->tupla = nuevaTupla;
+    auxTabla->tupla = nuevaTupla;
     //Crea la celda dummy en la tupla
     ListaCelda nuevaCelda = new nodoListaCelda;
     nuevaCelda->ant = NULL;
     nuevaCelda->sig = NULL;
     nuevaCelda->nroCelda = 0;
-    nuevaTabla->tupla->celda = nuevaCelda;
+    auxTabla->tupla->celda = nuevaCelda;
     return res;
 }
 
 TipoRet dropTable(string nombreTabla){
     TipoRet res = OK;
-    extern ListaTabla LTabla;               //Variable tipo listaTabla Global
-    ListaTabla auxTabla = LTabla, borrarTabla;
+    extern ABBTabla t;               //Variable tipo listaTabla Global
+    ABBTabla auxTabla = LTabla, borrarTabla;
     ListaColum auxColum, borrarColum;
     ListaTupla auxTupla, borrarTupla;
     ListaCelda auxCelda, borrarCelda;
@@ -190,11 +203,11 @@ TipoRet dropTable(string nombreTabla){
 
 TipoRet addCol(string nombreTabla, string nombreCol){
     TipoRet res = NO_IMPLEMENTADA;
-    extern ListaTabla LTabla;               //ListaTabla Global
+    extern ABBTabla t;               //ListaTabla Global
     ListaTabla auxTabla = LTabla;
     ListaColum auxColum = NULL;
     ListaColum nuevaColum = NULL;
-    auxTabla = buscarTabla(LTabla, nombreTabla); //Si existe la tabla, se para apuntando sobre ella
+    auxTabla = traerNodoTabla(); //Si existe la tabla, se para apuntando sobre ella
     if( auxTabla!=NULL ){
         if( auxTabla->tupla->sig == NULL ){ // Chequea que la tabla no tenga ningun registro cargado **/
             auxColum = auxTabla->columna; //Puntero auxiliar para recorrer las columnas
@@ -233,7 +246,7 @@ TipoRet addCol(string nombreTabla, string nombreCol){
 TipoRet dropCol(string nombreTabla, string nombreCol){
     TipoRet res = NO_IMPLEMENTADA;
     int nroColBuscada;
-    extern ListaTabla LTabla;               //ListaTabla Global
+    extern ABBTabla t;               //ListaTabla Global
     ListaTabla auxTabla = LTabla;           //puntero auxiliar tipo ListaTabla
     ListaColum auxColum;
     ListaColum borraColum;
@@ -241,24 +254,30 @@ TipoRet dropCol(string nombreTabla, string nombreCol){
     ListaCelda auxCelda;
     ListaCelda borraCelda;
     /** Busca si existe la tabla **/
-    auxTabla = buscarTabla(LTabla, nombreTabla); //si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
+    auxTabla = traerNodoTabla(LTabla, nombreTabla); //si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
     if( auxTabla!=NULL ){
             auxColum = auxTabla->columna;
-
             while( auxColum->sig != NULL ){  //Recorre la lista de columnas y chequea que no exista una columna con el mismo nombre
                 if( auxColum->sig->nombre == nombreCol ){
                     nroColBuscada = buscarColumna(auxColum, nombreCol); //Obtiene el numero de la columna, si no lo encuentra retorna 1000
-                   // nroColBuscada = auxColum->sig->nroColum; //guarda el numero de la columna buscada
+                    if( auxColum->sig->PK==true && auxTabla->cantColumnas == 1 ){
+                        auxTupla = auxTabla->tupla;
+                        while( auxTupla->sig != NULL ){
+                            ListaTupla borrar = auxTupla->sig;
+                            auxTupla->sig = borrar->sig;
+                            borrar->ant = NULL;
+                            delete borrar;
+                        }
+                        ordenarIndiceTupla(auxTabla->tupla);
+                    }
                     if( auxColum->sig->PK==true && auxTabla->cantColumnas>1 ){//si hay mas de una columna no se pude borrar la pk
                         cout<<"  La columna \""<<nombreCol<<"\" es Clave Primaria y hay otras columnas que se identifican por ella."<<endl;
                         res = ERROR;
                         return res;
                     }
                     else{
-                    /******* LO MODIFICADO ********************/
                         borrarColumna( auxColum, nroColBuscada); //Borra la columna
                         ordenarNroColum(auxTabla->columna);    //Ordena los numeros de las columnas
-                    /*******************************************/
                         auxTabla->cantColumnas--;         //Decrementa en uno la cantidad de columnas que tiene la tabla
                         auxTupla = auxTabla->tupla->sig;//arranca en la tupla 1
                         while( auxTupla != NULL ){ //Busca en todas las tuplas
@@ -286,18 +305,17 @@ TipoRet dropCol(string nombreTabla, string nombreCol){
 
 TipoRet insertInto(string nombreTabla, string valoresTupla){
     TipoRet res = OK;
-    extern ListaTabla LTabla;                           //ListaTabla Global
+    extern ABBTabla t;                           //ListaTabla Global
     ListaTabla auxTabla = NULL;
     ListaTupla auxTupla = NULL;
     ListaArg listaValores = crearListaArg();            //crea una lista de valores para recibir los argumentos
     cargarListaArg(listaValores, valoresTupla, ':');    //carga los valores en una lista
-    auxTabla = buscarTabla(LTabla, nombreTabla); //si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
+    auxTabla = traerNodoTabla(LTabla, nombreTabla); //si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
     if( auxTabla != NULL){
         if( auxTabla->cantColumnas == lengthArg(listaValores) ){//Chequea si la cantidad de valores pasados es igual a los campos que tiene a tabla
             auxTupla = auxTabla->tupla;
             string pk = traerParametro(listaValores, 1); //obtiene la pk cursada
             if(agregarTuplaOrdenada(auxTupla, pk, listaValores)){  //Devuelve true si pudo insertar la tupla de forma ordenada
-             //   cargarTupla(auxTupla, listaValores);
                 cout<<"  Nuevo registro agregado con exito"<<endl;
                 borrarListaArg(listaValores);
                 return res;
@@ -313,7 +331,7 @@ TipoRet insertInto(string nombreTabla, string valoresTupla){
 
 TipoRet deleteFrom(string nombreTabla, string condicion){
     TipoRet res = OK;
-    extern ListaTabla LTabla;               //ListaTabla Global
+    extern ABBTabla t;               //ListaTabla Global
     ListaTabla auxTabla = NULL;                //Tabla auxiliar
     ListaTupla auxTupla = NULL;
     ListaCelda auxCelda = NULL;
@@ -324,7 +342,7 @@ TipoRet deleteFrom(string nombreTabla, string condicion){
     cargarListaArg(listaCondicion, condicion, operador); // separa ambas partes de la condicion
     string nombreColumna    = traerParametro(listaCondicion,1);
     string valorCondicion   = traerParametro(listaCondicion,2);
-    auxTabla = buscarTabla(LTabla, nombreTabla); //si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
+    auxTabla = traerNodoTabla(LTabla, nombreTabla); //si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
     if( auxTabla != NULL){
         int nroColumna = buscarColumna(auxTabla->columna, nombreColumna); //si el nombre de la columna existe retorna su posicion, si no retorna 1000
         if( nroColumna != 1000 ){ //Chequea que exista la columna
@@ -371,7 +389,7 @@ TipoRet deleteFrom(string nombreTabla, string condicion){
 
 TipoRet update(string nombreTabla, string condicionModificar, string columnaModificar, string valorModificar ){
     TipoRet res = OK;
-    extern ListaTabla LTabla;               //ListaTabla Global
+    extern ABBTabla t;               //ListaTabla Global
     ListaTabla auxTabla = NULL;             //Tabla auxiliar
     ListaTupla auxTupla = NULL;
     ListaCelda auxCelda = NULL;
@@ -381,7 +399,7 @@ TipoRet update(string nombreTabla, string condicionModificar, string columnaModi
     cargarListaArg(listaCondicion, condicionModificar, operador); // Separa ambas partes de la condicion
     string columnaCondicion = traerParametro(listaCondicion,1);// Nombre de la columna por la cual filtrar
     string valorCondicion   = traerParametro(listaCondicion,2); //Valor que debe cumplir el filtro
-    auxTabla = buscarTabla(LTabla, nombreTabla); //si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
+    auxTabla = traerNodoTabla(LTabla, nombreTabla); //si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
     if( auxTabla != NULL){
         int nroColumnaMod = buscarColumna(auxTabla->columna, columnaModificar); //si el nombre de la columna existe retorna su posicion, si no retorna 1000
         if( nroColumnaMod == 1 ){
@@ -424,7 +442,7 @@ TipoRet update(string nombreTabla, string condicionModificar, string columnaModi
 
 TipoRet printDataTable(string nombreTabla){
     TipoRet res = OK;
-    extern ListaTabla LTabla;               //ListaTabla Global
+    extern ABBTabla t;               //ListaTabla Global
     ListaTabla auxTabla = LTabla;
     while( auxTabla!=NULL ){
         if( auxTabla->nombre == nombreTabla ){ //Si existe la tabla, para apuntando sobre ella
@@ -437,8 +455,12 @@ TipoRet printDataTable(string nombreTabla){
                         cout<<"  "<< auxColum->nombre;
                     if( auxColum->nroColum > 1 && auxColum->sig != NULL )
                         cout<<":"<< auxColum->nombre;
-                    if( auxColum->sig == NULL && auxColum->nroColum > 1)
+                    if( auxColum->sig == NULL && auxColum->nroColum > 1){
                         cout<<":"<< auxColum->nombre <<endl;
+                        continue;
+                    }
+                    if( auxColum->sig == NULL )
+                        cout<<endl;
                 }
                 /** Recorre la lista tuplas (resgistros)*/
                 ListaTupla auxTupla = auxTabla->tupla;   // puntero que apunta a la celda dummy de la lista tuplas
@@ -454,8 +476,13 @@ TipoRet printDataTable(string nombreTabla){
                             cout<<"  "<< auxCelda->info;
                         if( auxCelda->nroCelda > 1 && auxCelda->sig != NULL )
                             cout<<":"<< auxCelda->info;
-                        if( auxCelda->sig == NULL && auxCelda->nroCelda > 1)
+                        if( auxCelda->sig == NULL && auxCelda->nroCelda > 1){
                             cout<<":"<< auxCelda->info <<endl;
+                            continue;
+                        }
+                        if( auxCelda->sig == NULL )
+                            cout<<endl;
+
                     }
                 }
                 return res;
@@ -469,25 +496,38 @@ TipoRet printDataTable(string nombreTabla){
 }
 
 void mostrarAyuda(){
-    cout <<endl<< "AYUDA DE COMANDOS: "<<endl;
+    cout <<endl<< "\tAYUDA DE COMANDOS: "<<endl;
     cout << "Nota: todos los comandos son 'case sensitive' "<<endl;
-    cout << "  help  _______________________________________________________________________* IMPRIME LA AYUDA EN PANTALLA *" <<endl<<endl;
-    cout << "  createTable(nombreTabla) ____________________________________________________* CREA UNA NUEVA TABLA *"<<endl<<endl;
-    cout << "  Ejemplo:    createTable(Empleados)"<<endl<<endl;
-    cout << "  dropTable(nombreTabla) ______________________________________________________* ELIMINA UNA TABLA EXISTENTE *" <<endl<<endl;
-    cout << "  Ejemplo:    dropTable(Productos)"<<endl<<endl;
-    cout << "  addCol(nombreTabla, nombreCol) ______________________________________________* AGREGA UNA NUEVA COLUMNA A LA TABLA EXISTENTE *" <<endl<<endl;
-    cout << "  Ejemplo:    addCol(Empleados, Apellido)"<<endl<<endl;
-    cout << "  dropCol(nombreTabla, nombreCol) _____________________________________________* ELIMINA UNA COLUMNA DE UNA TABLA *" <<endl<<endl;
-    cout << "  Ejemplo:    dropCol(Proyectos, idProyecto)"<<endl<<endl;
-    cout << "  insertInto(nombreTabla, valoresTupla) _______________________________________* INSERTA UN NUEVO REGISTRO EN LA TABLA *" <<endl<<endl;
-    cout << "  Ejemplo:    insertInto(Personas, 3333111: Telma: Perez)"<<endl<<endl;
-    cout << "  deleteFrom(nombreTabla, condicionEliminar) __________________________________* ELIMINA UN REGISTRO DE UNA TABLA *" <<endl<<endl;
-    cout << "  Ejemplo:    deleteFrom(Personas, Perez)"<<endl<<endl;
-    cout << "  update(nombreTabla, condicionModificar, columnaModificar, valorModificar) ___* caracterIZA UN CAMPO DE UNA TABLA *" <<endl<<endl;
-    cout << "  Ejemplo:    update(Personas, Nombre=Pepe: CI: 1555000)"<<endl<<endl;
-    cout << "  printDataTable(Clientes) _________________________________________________* IMPRIME TODOS LOS REGISTROS DE UNA TABLA *" <<endl<<endl;
-    cout << "  Ejemplo:    printDataTable(Clientes)"<<endl<<endl;
+    cout << "* help -> Imprimir ayuda" <<endl<<endl;
+    cout << "* Operadores validos para condicines en consultas:"<<endl;
+    cout << " (=) igual a ..."<<endl;
+    cout << " (!) diferente a ..."<<endl;
+    cout << " (*) comienza con ..."<<endl;
+    cout << " (-) todo ..."<<endl<<endl;
+    cout << "* createTable(nombreTabla) -> Crear tabla"<<endl;
+    cout << " Ejem: crear la tabla Empleados"<<endl;
+    cout << " Orden:  createTable(Empleados)"<<endl<<endl;
+    cout << "* dropTable(nombreTabla) -> Eliminar tabla"<<endl;
+    cout << " Ejem: eliminar la tabla Productos"<<endl;
+    cout << " Orden: dropTable(Productos)"<<endl<<endl;
+    cout << "* addCol(nombreTabla, nombreCol) -> Agregar columna"<<endl;
+    cout << " Ejem: agregar columna Apellido en la tabla Empleados"<<endl;
+    cout << " Orden: addCol(Empleados, Apellido)"<<endl<<endl;
+    cout << "* dropCol(nombreTabla, nombreCol) -> Eliminar columna"<<endl;
+    cout << " Ejem: elimina la columna idProyecto de la tabla Proyectos"<<endl;
+    cout << " Orden: dropCol(Proyectos, idProyecto)"<<endl<<endl;
+    cout << "* insertInto(nombreTabla, valoresTupla) -> Insertar registro"<<endl;
+    cout << " Ejem: agregar a Telma Perez en la tabla Personas "<<endl;
+    cout << " Orden: insertInto(Personas, 3333111: Telma: Perez)"<<endl<<endl;
+    cout << "* deleteFrom(nombreTabla, condicion) -> Eliminar registro"<<endl;
+    cout << " Ejem: elimina todos los registros de apellido Perez, de Personas"<<endl;
+    cout << " Orden: deleteFrom(Personas, apellido=Perez)"<<endl<<endl;
+    cout << "* update(nombreTabla, condicion, columna, valor) -> Atualizar tabla" <<endl;
+    cout << " Ejem: modifica el apellido a Ramos a todos los de nombre Pepe"<<endl;
+    cout << " Orden: update(Personas,Nombre=Pepe,apellido,Ramos)"<<endl<<endl;
+    cout << "* printDataTable(Clientes) -> Muestrar contenido de la tabla"<<endl;
+    cout << " Ejem: muestra el contenido de la tabla Clientes"<<endl;
+    cout << " Orden: printDataTable(Clientes)"<<endl<<endl;
 }
 
 /****************   LEE EL INGRESO DE LOS COMANDOS   ***********************/
@@ -511,30 +551,59 @@ void leerComando(ListaTabla LTabla, string comando){
     size_t posCierre = comando.find(")");        // posicion de parentesis de cierre
     string allArg = comando.substr(posApertura+1 ,(posCierre - posApertura -1)); // obtiene el contenido de los argumentos
 
-    if( test == 0 ){
-    	createTable("empleados");
-    	addCol("empleados","id");
-    	addCol("empleados","nombre");
-    	addCol("empleados","apellido");
-    	insertInto("empleados","11:Juan:Alvarez");
-    	insertInto("empleados","2:Marina:Arismendi");
-    	insertInto("empleados","9:Manuel:Urrutia");
-    	insertInto("empleados","5:Emiliano:Carvajal");
-    	test = 1;
-    }
-
     //Se cargan los argumentos recibidos en una lista
     ListaArg listaArg = crearListaArg();
     cargarListaArg(listaArg, allArg, ',');
 
     string nombreTabla = traerParametro(listaArg,1); //Obtiene el nombre de la tabla
 
-    if( sentencia=="createTable" ){ //createTable( nombreTabla )
+    if( sentencia=="selectWhere" ){
+        string tabla1;
+        string tabla2;
+        string condicion;
+        res = selectWhere(tabla2, condicion, tabla1);
+        if( res == 0 )
+            cout<< "  Query OK -> Se copio la tabla \""<<tabla1<<"\" en la tabla \""<<tabla2<<"\""<<endl<<endl;
+        if( res == 1)
+            cout<< "  Query ERROR -> Al copiar la tabla \""<<tabla1<<"\""<<endl<<endl;
+    }
+
+    if( sentencia=="select" ){ //createTable( nombreTabla )
+        string tabla1;
+        string tabla2;
+        string columnas;
+        res = select(tabla2, columnas, tabla1);
+        if( res == 0 )
+            cout<< "  Query OK -> Se copio la tabla \""<<tabla1<<"\" en la tabla \""<<tabla2<<"\""<<endl<<endl;
+        if( res == 1)
+            cout<< "  Query ERROR -> Al copiar la tabla \""<<tabla1<<"\""<<endl<<endl;
+    }
+
+    if( sentencia=="join" ){
+        string tabla1;
+        string tabla2;
+        string tabla3;
+        res = selectWhere(tabla1, tabla2, tabla3);
+        if( res == 0 )
+            cout<< "  Query OK -> Tabla \""<<tabla1<<"\" se junto con \""<<tabla2<<"\""<<endl<<endl;
+        if( res == 1)
+            cout<< "  Query ERROR -> Al crear la tabla \""<<tabla3<<"\""<<endl<<endl;
+    }
+
+    if( sentencia=="createTable" ){
         res = createTable(nombreTabla);
         if( res == 0 )
             cout<< "  Query OK -> Se creo la tabla \""<<nombreTabla<<"\""<<endl<<endl;
         if( res == 1)
             cout<< "  Query ERROR -> La tabla "<<nombreTabla<<" ya existe"<<endl<<endl;
+    }
+
+    if( sentencia=="printTables" ){
+        res = printTables();
+        if( res == 0 )
+            cout<< "  Query OK"<<endl<<endl;
+        if( res == 1)
+            cout<< "  Query ERROR"<<endl<<endl;
     }
 
     if( sentencia=="dropTable" ){ // dropTable( nombreTabla )
@@ -798,14 +867,6 @@ void cargarListaArg(ListaArg L, string allArg, char separador){//Carga una lista
     agregarArg(L, dato);
 }
 
-ListaTabla buscarTabla(ListaTabla &LTabla, string nombreTabla){ //Busca una tabla por su nombre
-    if( LTabla == NULL)
-        return NULL;
-    if( LTabla->nombre != nombreTabla )
-        return buscarTabla( LTabla->sig, nombreTabla);
-    else
-        return LTabla;
-}
 
 /** Esta funcion busca la tupla por su PK y solo retorna true si la encentra, en ese caso el puntero recibido queda apuntando a
 dicho registro.
@@ -960,12 +1021,12 @@ void borrarColumnasTabla(ListaColum &auxColum){ //Borra todas las columnas de un
 void borrarTuplasTabla(ListaTupla &auxTupla){ //Borra todas las tuplas de una tabla
     if( auxTupla==NULL)
         return;
-    if( auxTupla->sig==NULL ){
+    if( auxTupla->sig == NULL ){
         ListaTupla borrar = auxTupla;
         auxTupla = NULL;
         delete borrar;
         return;
-    }else{
+    }if( auxTupla->sig != NULL ){
         ListaTupla borrar = auxTupla->sig;
         auxTupla->sig = borrar->sig;
         delete borrar;
@@ -990,26 +1051,159 @@ void borrarListaArg(ListaArg &L){ //Borra todas los argumentos
 }
 
 void ordenarNroColum(ListaColum &auxColum){
-	if( auxColum == NULL )
-		return;
-	if( auxColum->ant == NULL ){
-		auxColum->nroColum = 0;
-		ordenarNroColum( auxColum->sig );
-	}else{//void agregarCeldaFinal(ListaCelda &auxCelda, string dato);//agrega nueva celda al final de la lista
-		auxColum->nroColum = auxColum->ant->nroColum +1 ;
-		ordenarNroColum( auxColum->sig );
-	}
+    if( auxColum == NULL )
+        return;
+    if( auxColum->ant == NULL ){
+        auxColum->nroColum = 0;
+        ordenarNroColum( auxColum->sig );
+    }else{//void agregarCeldaFinal(ListaCelda &auxCelda, string dato);//agrega nueva celda al final de la lista
+        auxColum->nroColum = auxColum->ant->nroColum +1 ;
+        ordenarNroColum( auxColum->sig );
+    }
 }
 
 void ordenarNroCelda(ListaCelda &auxCelda){
-	if( auxCelda == NULL )
-		return;
-	if( auxCelda->ant == NULL ){
-		auxCelda->nroCelda = 0;
-		ordenarNroCelda( auxCelda->sig );
-	}else{
-		auxCelda->nroCelda = auxCelda->ant->nroCelda +1 ;
-		ordenarNroCelda( auxCelda->sig );
-	}
+    if( auxCelda == NULL )
+        return;
+    if( auxCelda->ant == NULL ){
+        auxCelda->nroCelda = 0;
+        ordenarNroCelda( auxCelda->sig );
+    }else{
+        auxCelda->nroCelda = auxCelda->ant->nroCelda +1 ;
+        ordenarNroCelda( auxCelda->sig );
+    }
+}
+
+
+
+
+/** Busca el nodo en el arbol y lo retorna o retorna NULL si no lo encuentra**/
+ABBTabla traerNodoTabla(string nombre, ABBTabla &t){
+    if( t == NULL )
+        return NULL;
+    if( nombre == t->nombre )
+            return t;
+    if( nombre.compare(t->nombre) > 0 )
+        return traerNodoTabla(nombre, t->der) ;
+    if( nombre.compare(t->nombre) < 0 )
+        return traerNodoTabla(nombre, t->izq);
+}
+
+/**Destruye un nodo tipo tabla */
+void destruirNodo(ABBTabla nodo){
+    nodo->izq = NULL;
+    nodo->der = NULL;
+    delete nodo;
+}
+
+void imprimirArbol( ABBTabla t){ //Recorre en orden y muestra los elementos en pantalla
+    if( t != NULL ){
+        imprimirArbol(t->izq);
+        cout << t->nombre<<endl ;
+        imprimirArbol(t->der);
+    }
+}
+
+/** Busca la posicion de donde colgara el nuevo nodo (Posicion del nodo padre) ***/
+ABBTabla obtenerPosicion(ABBTabla &t, string nombre){
+    if( t == NULL) return t;                      //Si el arbol esta vacio y retorno NULL
+    if( nombre.compare(t->nombre) < 0 && t->izq != NULL ) //Si es menor y hay mas elementos a la izquierda avanza
+        return obtenerPosicion(t->izq, nombre);
+
+    if( nombre.compare(t->nombre) < 0 && t->izq == NULL )//Si es menor y no hay mas elementos (es una hoja)
+        return t;
+
+    if( nombre.compare(t->nombre) > 0 && t->der != NULL )//Si es mayor y hay mas elementos a la derecha avanza
+        return obtenerPosicion(t->der, nombre);
+
+    if( nombre.compare(t->nombre) > 0 && t->der == NULL )//Si es mayor y no hay mas elementos (es una hoja)
+        return t;
+}
+
+bool miembro(string x, ABBTabla t){ //Chequea si un elemento pertenece al ABBTabla
+    if( t == NULL ) return false;
+    else{
+        if( x == t->nombre )
+            return true;
+        else
+            return ( miembro(x, t->izq) || miembro(x, t->der) );
+    }
+}
+
+ABBTabla crearNodoTabla(string nombre, ABBTabla nodoPadre){ //Crea un nodo de tipo tabla
+    ABBTabla nuevo = new nodoABBTabla;
+    nuevo->izq = NULL;
+    nuevo->der = NULL;
+    nuevo->cantColumnas = 0;
+    nuevo->padre = nodoPadre;
+    nuevo->nombre= nombre;
+    return nuevo;
+}
+
+void insertDer( string nombre, ABBTabla &t){
+    t->der = crearNodoTabla(nombre, t);
+}
+
+void insertIzq(string nombre, ABBTabla &t){
+    t->izq = crearNodoTabla(nombre, t);
+}
+
+void insertNodoTabla(ABBTabla &t, string nombre){ //Recibe el nombre de una tabla y la crea en la posicion correcta
+    ABBTabla padre = obtenerPosicion(t, nombre);    //Obtiene la posicion del padre que le corresponde
+    if( padre == NULL ){
+        padre = crearNodoTabla(nombre, padre);
+        t = padre;
+        return;
+    }
+    if( nombre.compare(padre->nombre) > 0 ){
+        insertDer(nombre, padre);
+    }
+    else
+        insertIzq(nombre, padre);
+}
+
+void borrarNodoTabla(ABBTabla nodoEliminar){
+    if( nodoEliminar->der && nodoEliminar->izq ){ /**Si tiene ambos hijos*/
+        ABBTabla menor = obtenerMinimo( nodoEliminar->der ); //Obtiene el menimo que esta a la derecha
+        nodoEliminar->nombre = menor->nombre; //Cambia los datos del nodo a eliminar por los del minimo que esta a la derecha
+        menor->padre->izq = menor->izq;
+        borrarNodoTabla(menor); //ahora hay que eliminar al menor que se copio para arriba
+    }
+    else if( nodoEliminar->izq ){ /**Si solo tiene un hijo de la izquierda*/
+        reemplazar(nodoEliminar, nodoEliminar->izq);//Sustituye el nodo a borrar por el nodo de la izquierda
+        destruirNodo(nodoEliminar);
+    }
+    else if( nodoEliminar->der ){ /**Si solo tiene un hijo de la derecha */
+        reemplazar(nodoEliminar, nodoEliminar->der);//Sustituye el nodo a borrar por el nodo de la derecha
+        destruirNodo(nodoEliminar);
+    }
+    else{ /**Si no tiene hijos ( el nodo a eliminar es una hoja ) */
+      //  reemplazar(nodoEliminar, NULL);//Sustituye el nodo a eliminar por NULL
+        destruirNodo(nodoEliminar);
+    }
+}
+
+/** Funcion para obtener el nodo minimo **/
+ABBTabla obtenerMinimo(ABBTabla t){//Determina el nodo más a la izquierda
+    if( t == NULL )
+        return NULL;
+    if( t->izq ) //Si teine hijo izquierdo avanza más a la izquierda
+        return obtenerMinimo(t->izq);
+    else        //Si no tiene hijo izquierdo, llego al final y retorna el nodo minimo
+        return t;
+}
+
+/** Funcion para reemplazar el nodo1 por el nodo2 **/
+void reemplazar(ABBTabla nodo1, ABBTabla nodo2){
+    if( nodo1->padre ){ //Si el nodo a reemplazar tiene padre
+        if( nodo1->nombre == nodo1->padre->izq->nombre ){//Chequea que el padre este apuntando al hijo izquierdo
+            nodo1->padre->izq = nodo2; //Ahora el hijo izquierdo del padre es nodo2
+        }
+        if( nodo1->nombre == nodo1->padre->der->nombre ){//Chequea que el padre este apuntando al hijo derecho
+            nodo1->padre->der = nodo2; //Ahora el hijo derecho del padre es nodo2
+        }
+    }
+    if( nodo2 )
+        nodo2->padre = nodo1->padre;//Ahora nodo2 apunta a su nuevo padre
 }
 
