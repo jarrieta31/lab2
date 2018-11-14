@@ -119,6 +119,7 @@ void agregarColumna(ListaColum L, string nombre); //Agrega una columna al final 
 void agregarCelda(ListaCelda L, string info);
 void insertarReg(string nombreTabla, string valoresTupla);//agrega un nuevo registro
 string traerValores(ListaCelda L, string values);//Recibe una lista de celdas llena y un string vacio. Retorna un string en este formato "valor1:valor2:valor3"
+bool columnasRepetidas(ListaColum L1, ListaColum L2);//Verifica si hay columnas repetidas entre las columnas de 2 tablas, sin contar las PK
 
 int main(){
     extern ABBTabla t;
@@ -137,7 +138,16 @@ int main(){
     insertInto("Empleados","5389:Guillermo:Moreira");
     insertInto("Empleados","3719:Julio:Arrieta");
     insertInto("Empleados","4164:Mariano:Castro");
+    createTable("Clientes");
+    addCol("Clientes","CI");
+    addCol("Clientes","Apodo");
+    addCol("Clientes", "Direccion");
+    insertInto("Clientes","2345:Juan:18deJulio");
+    insertInto("Clientes","4711:Carlos:Asamblea234");
+    insertInto("Clientes","6545:Alex:Ricon420");
+    insertInto("Clientes","7823:Lucas:Artigas 611");
     printDataTable("Empleados");
+    printDataTable("Clientes");
 
     while(comando!="exit"){ //mantiene la terminal esperando ordenes
         getline(cin, comando);
@@ -535,7 +545,7 @@ TipoRet selectWhere(string nombreTabla2, string condicion, string nombreTabla1){
         return res;
     }
     if( nombreTabla2.empty() ){ // Valida que el nombre de la tabla2 no este vacio
-        cout<< "  Falto especificar el nombre de la nueva tabla"<<endl;
+        cout<< "  Falta especificar el nombre de la nueva tabla"<<endl;
         res = ERROR;
         return res;
     }
@@ -642,14 +652,21 @@ TipoRet join(string nombreTabla1, string nombreTabla2, string nombreTabla3){//Ju
         cout<<"  La tabla "<<nombreTabla2<<" no existe"<<endl;
         return ( res = ERROR );
     }
-    if( auxTabla1->cantColumnas > 0 && auxTabla2->cantColumnas > 0 ){//Valida que la tabla1 y 2 tengan almenos un campo
+    if( auxTabla1->cantColumnas < 1 || auxTabla2->cantColumnas < 1 ){//Valida que la tabla1 y 2 tengan almenos un campo
         cout<<"  No hay columnas suficientes"<<endl;
         return ( res = ERROR );
     }
-    if( auxTabla1->columna->sig->nombre.compare(auxTabla2->columna->sig->nombre) == 0 ){//Valida que la tabla1 y 2 tengan almenos un campo
+    if( auxTabla1->columna->sig->nombre.compare(auxTabla2->columna->sig->nombre) != 0 ){//Valida que la tabla1 y 2 tengan almenos un campo
         cout<<"  Las claves primarias no concuerdan"<<endl;
         return ( res = ERROR );
     }
+    auxColum1 = auxTabla1->columna;
+    auxColum2 = auxTabla2->columna;
+    if( columnasRepetidas(auxColum1, auxColum2) ){ //Verifica si hay columnas repetidas en las tablas, sin contar las pk
+        cout<<"  Existen columnas repetidas en las tablas"<<endl;
+        return ( res = ERROR );
+    }
+
 
 
 
@@ -715,11 +732,11 @@ void leerComando(ABBTabla t, string comando){
         tabla2 = traerParametro(listaArg,2);
         tabla3 = traerParametro(listaArg,3);
         string tabla3;
-        res = selectWhere(tabla1, tabla2, tabla3);
+        res = join(tabla1, tabla2, tabla3);
         if( res == 0 )
             cout<< "  Query OK -> Tabla \""<<tabla1<<"\" se junto con \""<<tabla2<<"\""<<endl<<endl;
         if( res == 1)
-            cout<< "  Query ERROR -> Al crear la tabla \""<<tabla3<<"\""<<endl<<endl;
+            cout<< "  Query ERROR -> Al crear juntar las tablas \""<<tabla1<<"\" y \""<<tabla2<<"\""<<endl<<endl;
         return;
     }
 
@@ -1451,6 +1468,15 @@ void insertarReg(string nombreTabla, string valoresTupla){
     else{
         cout<<"  La tabla a copiar \""<<nombreTabla<<"\" no existe"<<endl;
     }
+}
+
+bool columnasRepetidas(ListaColum L1, ListaColum L2){
+    if( L1 == NULL && L2 == NULL )
+        return false;
+    if( L1->nombre.compare(L2->nombre) == 0 && L1->nroColum > 1 )
+        return true;
+    else
+        return columnasRepetidas( L1->sig, L2->sig );
 }
 
 
