@@ -113,6 +113,8 @@ void borrarCeldasTupla(ListaCelda &auxCelda); //borra todas las celdas
 void borrarTuplasTabla(ListaTupla &auxTupla); //Borra todas las tuplas de una tabla
 bool comienzaCon(string valor, string datoCelda); //Comprueba si el dato de una celda comienda con un determinado valor
 void modificarCelda(ListaCelda &auxCelda, int nroCelda, string nuevoValor);
+void copiarColumnas(ListaColum colum1, ListaColum colum2);//Copia los nombres de la colum1 en la colum2
+void agregarColumna(ListaColum L, string nombre); //Agrega una columna al final de la lista, sin mensajes ni validaciones
 
 int main(){
     extern ABBTabla t;
@@ -332,10 +334,10 @@ TipoRet deleteFrom(string nombreTabla, string condicion){
         int nroColumna = buscarColumna(auxTabla->columna, nombreColumna); //si el nombre de la columna existe retorna su posicion, si no retorna 1000
         if( nroColumna != 1000 ){ //Chequea que exista la columna
             auxTupla = auxTabla->tupla->sig; //Puntero auxiliar para recorrer las tuplas
+            bool encontrado = false;
             while( auxTupla!= NULL ){
                 auxCelda = auxTupla->celda;
                 if( operador!='-' ){
-                    bool encontrado = false;
                     encontrado = compararCelda(auxCelda, nroColumna, operador, valorFiltro);
                     if( encontrado == true ){
                         cout<<"  Registro borrado-> "<< auxCelda->sig->info <<":"<< auxCelda->sig->sig->info<<":"<<auxCelda->sig->sig->sig->info  <<endl;
@@ -514,12 +516,15 @@ void mostrarAyuda(){
 TipoRet selectWhere(string nombreTabla2, string condicion, string nombreTabla1){
     TipoRet res = NO_IMPLEMENTADA;
     extern ABBTabla t;
+    ListaTupla auxTupla1 = NULL;
+    ListaColum auxColum1 = NULL;
+    ListaCelda auxCelda1 = NULL;
     char operador = traerOperador(condicion);           //obtiene el operador de la condicion a buscar
     ListaArg listaCondicion = crearListaArg();           //Crea una lista con las condiciones
     cargarListaArg(listaCondicion, condicion, operador); // Separa ambas partes de la condicion
     string columnaFiltro = traerParametro(listaCondicion,1);// Nombre de la columna por la cual filtrar
     string valorFiltro   = traerParametro(listaCondicion,2); //Valor que debe cumplir el filtro
-
+    int regCopiados = 0;
     if( nombreTabla1.empty() ){  // Valida que el nombre de la tabla1 no este vacio
         cout<< "  Falta el nombre de la tabla a copiar"<<endl;
         res = ERROR;
@@ -539,15 +544,57 @@ TipoRet selectWhere(string nombreTabla2, string condicion, string nombreTabla1){
     }
     ABBTabla auxTabla1 = traerNodoTabla(nombreTabla1,t); //Trae el nodo de la tabla1
     if( auxTabla1 != NULL ){ //Valida si la tabla1 existe
-        int nroColumna = buscarColumna( columnaFiltro ); //Si la columna existe retorna su nro. y si no existe retorna 1000
-        if( nroColumna != 1000 ){
+        auxColum1 = auxTabla1->columna;
+        int nroColumna = buscarColumna(auxColum1, columnaFiltro); //Si la columna para hacer el filtro existe retorna su nro. y si no existe retorna 1000
+        if( nroColumna != 1000 ){               //Chequea que exista la columna
+            auxTupla1 = auxTabla1->tupla->sig;   //Puntero auxiliar para recorrer las tuplas
+            bool encontrado = false;            //Esta variable pasa a true en dada tupla si encuentra un elemento que coincide
+            bool tabla2Existe = false;          //Al encontrar el primer elemento crea la tabla2 y esta variable pasa a true
+            while( auxTupla1 != NULL ){           //Busca en tupla por tupla
+                auxCelda1 = auxTupla1->celda;
+                if( operador!='-' ){
+                    //Compara el contenido de la celda nroColumncon con el valorFiltro y retorna un bool
+                    encontrado = compararCelda(auxCelda1, nroColumna, operador, valorFiltro);
+                    /*********************Copia solo los encontrados por el filtro *******************/
+                    if( encontrado == true ){//Si encuentra en valor cheque si la tabla existe de lo contrario la crea
+                        if( tabla2Existe == false ){
+                            createTable(nombreTabla2);//Crea la tabla2
+                            tabla2Existe = true;      //Se asegura que no se cree otra vez
+                            ABBTabla auxTabla2 = traerNodoTabla(nombreTabla2, t);//trae la tabla2 recien creada
+                            auxTabla2->cantColumnas = auxTabla1->cantColumnas;   //setea la misca cantidad de columnas que la tabla1
+                            ListaColum auxColum2 = auxTabla2->columna;
+                            copiarColumnas(auxColum1, auxColum2);              //Copia los nombres de las columnas de la tabla1 a la tabla2
+                        }
+                        //codigo para unos pocos
+                        regCopiados++; //Cuenata los registros encontrados
+                    }
+                }
+                /********************************** Copia toda la tabla *************************/
+                if( operador=='-' ){
+                    // codigo para todos
 
-            res = OK;
-            return res;alto especificar el nombre de la nueva tabla
+                    regCopiados++;
+                }
+                auxTupla1 = auxTupla1->sig;
+            }
+            borrarListaArg(listaCondicion);
+            if( regCopiados == 0 ) //Si no ecuentra el valor
+                cout<< "  No existe ninguna celda con el valor \""<<valorFiltro;
+            else
+                cout<< "  Registros copiados "<<regCopiados;//Imprime la cantidad de registros afectados si encuentra alguno
+         //   cout<<msjRespuesta<<endl; //Imprime en pantalla la respuesta
+            return res;
+        }
+        else{
+            cout<<"  No hay campo con ese nombre";
+            borrarListaArg(listaCondicion);
+            res = ERROR;
+            return res;
         }
 
     }
      //Si la tabla1 no existe retorna error
+    cout<<"La tabla \""<<nombreTabla1<<"\" no existe"<<endl;
     res = ERROR;
     return res;
 
@@ -829,9 +876,12 @@ bool compararCelda(ListaCelda L, int nroCelda, char operador, string valor){
         L = L->sig;
     }
         if( operador == '=' ){
-            if( valor.compare(L->info) == 0 ) return true;
-            else
+            if( valor.compare(L->info) == 0 ){
+                return true;
+            }
+            else{
                 return false;
+            }
         }
         if( operador == '<' ){
             if( valor.compare(L->info) < 0 )
@@ -1290,4 +1340,25 @@ void reemplazar(ABBTabla nodo1, ABBTabla nodo2){
     if( nodo2 )
         nodo2->padre = nodo1->padre;//Ahora nodo2 apunta a su nuevo padre
 }
+
+void copiarColumnas(ListaColum colum1, ListaColum colum2){
+    if( colum1->sig != NULL ){
+        if( colum2->sig == NULL )
+            agregarColumna(colum2, colum1->sig->nombre);
+        copiarColumnas(colum1->sig, colum2->sig);
+    }
+}
+
+void agregarColumna(ListaColum L, string nombre){
+    ListaColum nuevaColum = new nodoListaColum;
+    L->sig = nuevaColum;
+    nuevaColum->nombre = nombre;
+    nuevaColum->sig = NULL;
+    nuevaColum->ant = L;
+    nuevaColum->nroColum = nuevaColum->ant->nroColum+1;
+    if( L->ant == NULL )  // Verifica si la columna a agregar debe ser PK o no
+        nuevaColum->PK = true;
+}
+
+
 
