@@ -619,7 +619,40 @@ TipoRet select(string nombreTabla2, string valoresColumnas, string nombreTabla1)
 ///////////////////////////////////////////////////////////////////////////////////
 }
 
-TipoRet join(string nombreTabla1, string nombreTabla2, string nombreaTabla3){//Junta la tabla 1 con la 2 y forman la 3
+TipoRet join(string nombreTabla1, string nombreTabla2, string nombreTabla3){//Junta la tabla 1 con la 2 y forman la 3
+    TipoRet res = NO_IMPLEMENTADA;
+    extern ABBTabla t;
+    ListaTupla auxTupla1 = NULL;
+    ListaColum auxColum1 = NULL;
+    ListaCelda auxCelda1 = NULL;
+    ListaTupla auxTupla2 = NULL;
+    ListaColum auxColum2 = NULL;
+    ListaCelda auxCelda2 = NULL;
+    if( miembro(nombreTabla3,t)){ //Si la tabla tres ya existe retorna error
+        cout<<"  La tabla "<<nombreTabla3<<" ya existe"<<endl;
+        return ( res = ERROR );
+    }
+    ABBTabla auxTabla1 = traerNodoTabla(nombreTabla1,t); //Trae el nodo de la tabla1
+    ABBTabla auxTabla2 = traerNodoTabla(nombreTabla2,t); //Trae el nodo de la tabla2
+    if( auxTabla1==NULL ){
+        cout<<"  La tabla "<<nombreTabla1<<" no existe"<<endl;
+        return ( res = ERROR );
+    }
+    if( auxTabla2==NULL ){
+        cout<<"  La tabla "<<nombreTabla2<<" no existe"<<endl;
+        return ( res = ERROR );
+    }
+    if( auxTabla1->cantColumnas > 0 && auxTabla2->cantColumnas > 0 ){//Valida que la tabla1 y 2 tengan almenos un campo
+        cout<<"  No hay columnas suficientes"<<endl;
+        return ( res = ERROR );
+    }
+    if( auxTabla1->columna->sig->nombre.compare(auxTabla2->columna->sig->nombre) == 0 ){//Valida que la tabla1 y 2 tengan almenos un campo
+        cout<<"  Las claves primarias no concuerdan"<<endl;
+        return ( res = ERROR );
+    }
+
+
+
 
 }
 
