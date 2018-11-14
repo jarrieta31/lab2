@@ -115,6 +115,10 @@ bool comienzaCon(string valor, string datoCelda); //Comprueba si el dato de una 
 void modificarCelda(ListaCelda &auxCelda, int nroCelda, string nuevoValor);
 void copiarColumnas(ListaColum colum1, ListaColum colum2);//Copia los nombres de la colum1 en la colum2
 void agregarColumna(ListaColum L, string nombre); //Agrega una columna al final de la lista, sin mensajes ni validaciones
+//void copiarCeldas(ListaCelda celdas1, ListaCelda celdas2);
+void agregarCelda(ListaCelda L, string info);
+void insertarReg(string nombreTabla, string valoresTupla);//agrega un nuevo registro
+string traerValores(ListaCelda L, string values);//Recibe una lista de celdas llena y un string vacio. Retorna un string en este formato "valor1:valor2:valor3"
 
 int main(){
     extern ABBTabla t;
@@ -551,38 +555,39 @@ TipoRet selectWhere(string nombreTabla2, string condicion, string nombreTabla1){
             bool encontrado = false;            //Esta variable pasa a true en dada tupla si encuentra un elemento que coincide
             bool tabla2Existe = false;          //Al encontrar el primer elemento crea la tabla2 y esta variable pasa a true
             while( auxTupla1 != NULL ){           //Busca en tupla por tupla
+                encontrado = false;
                 auxCelda1 = auxTupla1->celda;
-                if( operador!='-' ){
-                    //Compara el contenido de la celda nroColumncon con el valorFiltro y retorna un bool
-                    encontrado = compararCelda(auxCelda1, nroColumna, operador, valorFiltro);
-                    /*********************Copia solo los encontrados por el filtro *******************/
-                    if( encontrado == true ){//Si encuentra en valor cheque si la tabla existe de lo contrario la crea
-                        if( tabla2Existe == false ){
-                            createTable(nombreTabla2);//Crea la tabla2
-                            tabla2Existe = true;      //Se asegura que no se cree otra vez
-                            ABBTabla auxTabla2 = traerNodoTabla(nombreTabla2, t);//trae la tabla2 recien creada
-                            auxTabla2->cantColumnas = auxTabla1->cantColumnas;   //setea la misca cantidad de columnas que la tabla1
-                            ListaColum auxColum2 = auxTabla2->columna;
-                            copiarColumnas(auxColum1, auxColum2);              //Copia los nombres de las columnas de la tabla1 a la tabla2
-                        }
-                        //codigo para unos pocos
+                if( operador!='-' ) /*********************Copia solo los encontrados por el filtro *******************/
+                    encontrado = compararCelda(auxCelda1, nroColumna, operador, valorFiltro);//Compara el contenido de la celda nroColumncon con el valorFiltro y retorna un bool
+                if( operador=='-' ) /********************************** Copia toda la tabla *************************/
+                    encontrado = true;
+                /****************************************************************************************************/
+                if( encontrado == true ){//Si encuentra en valor chequea si la tabla existe de lo contrario la crea
+                    if( tabla2Existe == false ){
+                        createTable(nombreTabla2);//Crea la tabla2
+                        tabla2Existe = true;      //Se asegura que no se cree otra vez
+                        ABBTabla auxTabla2 = traerNodoTabla(nombreTabla2, t);//trae la tabla2 recien creada
+                        auxTabla2->cantColumnas = auxTabla1->cantColumnas;   //setea la misca cantidad de columnas que la tabla1
+                        ListaColum auxColum2 = auxTabla2->columna;
+                        copiarColumnas(auxColum1, auxColum2);              //Copia los nombres de las columnas de la tabla1 a la tabla2
+                        string valores = traerValores(auxCelda1,"");
+                        insertarReg(nombreTabla2,valores);
+                        regCopiados++;
+                    }
+                    else{
+                        string valores = traerValores(auxCelda1,"");
+                        insertarReg(nombreTabla2,valores);
                         regCopiados++; //Cuenata los registros encontrados
                     }
                 }
-                /********************************** Copia toda la tabla *************************/
-                if( operador=='-' ){
-                    // codigo para todos
-
-                    regCopiados++;
-                }
-                auxTupla1 = auxTupla1->sig;
+                auxTupla1 = auxTupla1->sig;  // Avanza a la siguiente tupla (registros)
             }
             borrarListaArg(listaCondicion);
             if( regCopiados == 0 ) //Si no ecuentra el valor
                 cout<< "  No existe ninguna celda con el valor \""<<valorFiltro;
             else
-                cout<< "  Registros copiados "<<regCopiados;//Imprime la cantidad de registros afectados si encuentra alguno
-         //   cout<<msjRespuesta<<endl; //Imprime en pantalla la respuesta
+                cout<< "  Registros copiados "<<regCopiados<<endl;//Imprime la cantidad de registros copiados si encuentra alguno
+            res = OK;
             return res;
         }
         else{
@@ -597,7 +602,6 @@ TipoRet selectWhere(string nombreTabla2, string condicion, string nombreTabla1){
     cout<<"La tabla \""<<nombreTabla1<<"\" no existe"<<endl;
     res = ERROR;
     return res;
-
 }
 
 
@@ -1358,6 +1362,62 @@ void agregarColumna(ListaColum L, string nombre){
     nuevaColum->nroColum = nuevaColum->ant->nroColum+1;
     if( L->ant == NULL )  // Verifica si la columna a agregar debe ser PK o no
         nuevaColum->PK = true;
+}
+/*
+void copiarCeldas(ListaCelda celdas1, ListaCelda celdas2){
+    if( celdas1->sig != NULL ){
+        if( celdas2->sig == NULL )
+            agregarCelda(celdas2, celdas1->sig->info);
+        copiarCeldas(celdas1->sig, celdas2->sig);
+    }
+}
+*/
+
+void agregarCelda(ListaCelda L, string info){
+    ListaCelda nuevaCelda = new nodoListaCelda;
+    L->sig = nuevaCelda;
+    nuevaCelda->info = info;
+    nuevaCelda->sig = NULL;
+    nuevaCelda->ant = L;
+    nuevaCelda->nroCelda = nuevaCelda->ant->nroCelda+1;
+}
+
+
+string traerValores(ListaCelda L, string values){
+    if( L==NULL )
+        return values;
+    else{
+        if( L->nroCelda <= 1 ){
+            return traerValores(L->sig, values += L->info);
+        }else
+            return traerValores(L->sig, values +=":"+L->info);
+    }
+
+}
+
+void insertarReg(string nombreTabla, string valoresTupla){
+    extern ABBTabla t;                           //ListaTabla Global
+    ABBTabla auxTabla;
+    ListaTupla auxTupla = NULL;
+    ListaArg listaValores = crearListaArg();            //crea una lista de valores para recibir los argumentos
+    cargarListaArg(listaValores, valoresTupla, ':');    //carga los valores en una lista
+    auxTabla = traerNodoTabla(nombreTabla, t); //si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
+    if( auxTabla != NULL){
+        if( auxTabla->cantColumnas == lengthArg(listaValores) ){//Chequea si la cantidad de valores pasados es igual a los campos que tiene a tabla
+            auxTupla = auxTabla->tupla;
+            string pk = traerParametro(listaValores, 1); //obtiene la pk cursada
+            if(agregarTuplaOrdenada(auxTupla, pk, listaValores)){  //Devuelve true si pudo insertar la tupla de forma ordenada
+                borrarListaArg(listaValores);
+                return;
+            }else{
+                borrarListaArg(listaValores);
+                return;
+            }
+        }
+    }
+    else{
+        cout<<"  La tabla a copiar \""<<nombreTabla<<"\" no existe"<<endl;
+    }
 }
 
 
