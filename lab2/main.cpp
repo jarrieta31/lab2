@@ -79,7 +79,7 @@ TipoRet update(string nombreTabla, string condicionModificar, string columnaModi
 TipoRet printDataTable(string nombreTabla);
 TipoRet selectWhere(string nombreTabla2, string condicion, string nombreTabla1);
 TipoRet select(string nombreTabla2, string valoresColumnas, string nombreTabla1);
-TipoRet join(string nombreTabla1, string nombreTabla2, string nombreaTabla3);//Junta la tabla 1 con la 2 y forman la 3
+TipoRet join(string tabla1, string tabla2, string tabla3 );//Junta la tabla 1 con la 2 y forman la 3
 TipoRet printTables();
 
 /** FUNCIONES Y PROCEDIMIENTOS AUXILIARES */
@@ -118,8 +118,10 @@ void agregarColumna(ListaColum L, string nombre); //Agrega una columna al final 
 //void copiarCeldas(ListaCelda celdas1, ListaCelda celdas2);
 void agregarCelda(ListaCelda L, string info);
 void insertarReg(string nombreTabla, string valoresTupla);//agrega un nuevo registro
-string traerValores(ListaCelda L, string values);//Recibe una lista de celdas llena y un string vacio. Retorna un string en este formato "valor1:valor2:valor3"
+//Recibe una lista de celdas llena, un string vacio y la posicion desde la cual se van a copiar los datos. Retorna un string en este formato "valor1:valor2:valor3"
+string traerDatosCeldas(ListaCelda L, string values, int pos);
 bool columnasRepetidas(ListaColum L1, ListaColum L2);//Verifica si hay columnas repetidas entre las columnas de 2 tablas, sin contar las PK
+void unirColumnas(ListaColum L1, ListaColum L2, int pos);//Une las columnas de la tabla2 con las columnas de la tabla1 (Los agrega al final de la tabla1 )
 
 int main(){
     extern ABBTabla t;
@@ -580,12 +582,12 @@ TipoRet selectWhere(string nombreTabla2, string condicion, string nombreTabla1){
                         auxTabla2->cantColumnas = auxTabla1->cantColumnas;   //setea la misca cantidad de columnas que la tabla1
                         ListaColum auxColum2 = auxTabla2->columna;
                         copiarColumnas(auxColum1, auxColum2);              //Copia los nombres de las columnas de la tabla1 a la tabla2
-                        string valores = traerValores(auxCelda1,"");
+                        string valores = traerDatosCeldas(auxCelda1,"", 1);
                         insertarReg(nombreTabla2,valores);
                         regCopiados++;
                     }
                     else{
-                        string valores = traerValores(auxCelda1,"");
+                        string valores = traerDatosCeldas(auxCelda1,"", 1);
                         insertarReg(nombreTabla2,valores);
                         regCopiados++; //Cuenata los registros encontrados
                     }
@@ -629,7 +631,7 @@ TipoRet select(string nombreTabla2, string valoresColumnas, string nombreTabla1)
 ///////////////////////////////////////////////////////////////////////////////////
 }
 
-TipoRet join(string nombreTabla1, string nombreTabla2, string nombreTabla3){//Junta la tabla 1 con la 2 y forman la 3
+TipoRet join(string tabla1, string tabla2, string tabla3 ){//Junta la tabla 1 con la 2 y forman la 3
     TipoRet res = NO_IMPLEMENTADA;
     extern ABBTabla t;
     ListaTupla auxTupla1 = NULL;
@@ -638,18 +640,18 @@ TipoRet join(string nombreTabla1, string nombreTabla2, string nombreTabla3){//Ju
     ListaTupla auxTupla2 = NULL;
     ListaColum auxColum2 = NULL;
     ListaCelda auxCelda2 = NULL;
-    if( miembro(nombreTabla3,t)){ //Si la tabla tres ya existe retorna error
-        cout<<"  La tabla "<<nombreTabla3<<" ya existe"<<endl;
+    if( miembro( tabla3, t)){ //Si la tabla tres ya existe retorna error
+        cout<<"  La tabla "<<tabla3<<" ya existe"<<endl;
         return ( res = ERROR );
     }
-    ABBTabla auxTabla1 = traerNodoTabla(nombreTabla1,t); //Trae el nodo de la tabla1
-    ABBTabla auxTabla2 = traerNodoTabla(nombreTabla2,t); //Trae el nodo de la tabla2
+    ABBTabla auxTabla1 = traerNodoTabla(tabla1,t); //Trae el nodo de la tabla1
+    ABBTabla auxTabla2 = traerNodoTabla(tabla2,t); //Trae el nodo de la tabla2
     if( auxTabla1==NULL ){
-        cout<<"  La tabla "<<nombreTabla1<<" no existe"<<endl;
+        cout<<"  La tabla "<<tabla1<<" no existe"<<endl;
         return ( res = ERROR );
     }
     if( auxTabla2==NULL ){
-        cout<<"  La tabla "<<nombreTabla2<<" no existe"<<endl;
+        cout<<"  La tabla "<<tabla2<<" no existe"<<endl;
         return ( res = ERROR );
     }
     if( auxTabla1->cantColumnas < 1 || auxTabla2->cantColumnas < 1 ){//Valida que la tabla1 y 2 tengan almenos un campo
@@ -666,12 +668,16 @@ TipoRet join(string nombreTabla1, string nombreTabla2, string nombreTabla3){//Ju
         cout<<"  Existen columnas repetidas en las tablas"<<endl;
         return ( res = ERROR );
     }
-
-
-
+    createTable( tabla3 );                          //Crea la nueva tabla;
+    ABBTabla auxTabla3 = traerNodoTabla(tabla3 , t);  //Trae la tabla3
+    ListaColum auxColum3 = auxTabla3->columna;
+    unirColumnas(auxColum3, auxColum1, 1);
+    unirColumnas(auxColum3, auxColum2, 2);
+    cout<<"Hola mundo"<<endl;
 
 
 }
+
 
 TipoRet printTables(){
     extern ABBTabla t;
@@ -731,7 +737,6 @@ void leerComando(ABBTabla t, string comando){
         tabla1 = traerParametro(listaArg,1);
         tabla2 = traerParametro(listaArg,2);
         tabla3 = traerParametro(listaArg,3);
-        string tabla3;
         res = join(tabla1, tabla2, tabla3);
         if( res == 0 )
             cout<< "  Query OK -> Tabla \""<<tabla1<<"\" se junto con \""<<tabla2<<"\""<<endl<<endl;
@@ -1395,6 +1400,7 @@ void reemplazar(ABBTabla nodo1, ABBTabla nodo2){
         nodo2->padre = nodo1->padre;//Ahora nodo2 apunta a su nuevo padre
 }
 
+/** Copia los datos de la columna 1 en la columna 2 ***/
 void copiarColumnas(ListaColum colum1, ListaColum colum2){
     if( colum1->sig != NULL ){
         if( colum2->sig == NULL )
@@ -1432,19 +1438,21 @@ void agregarCelda(ListaCelda L, string info){
     nuevaCelda->nroCelda = nuevaCelda->ant->nroCelda+1;
 }
 
-
-string traerValores(ListaCelda L, string values){
+/** Obtiene los datos de una lista de celdas (registro) y los retorna como estring con formato valor1:valor2:valor3
+EL string values debe ser vacio y el int pos indica la primer posicion a copiar **/
+string traerDatosCeldas(ListaCelda L, string values, int pos){
     if( L==NULL )
         return values;
     else{
-        if( L->nroCelda <= 1 ){
-            return traerValores(L->sig, values += L->info);
+        if( L->nroCelda <= pos ){
+            return traerDatosCeldas(L->sig, values += L->info, pos);
         }else
-            return traerValores(L->sig, values +=":"+L->info);
+            return traerDatosCeldas(L->sig, values +=":"+L->info, pos);
     }
 
 }
 
+/**Version simplificada para insertar datos en una tabla */
 void insertarReg(string nombreTabla, string valoresTupla){
     extern ABBTabla t;                           //ListaTabla Global
     ABBTabla auxTabla;
@@ -1470,6 +1478,7 @@ void insertarReg(string nombreTabla, string valoresTupla){
     }
 }
 
+/** Si hay columnas repetidas entre la tabla1 y la tabla2 retorna true, no cuenta la PK) */
 bool columnasRepetidas(ListaColum L1, ListaColum L2){
     if( L1 == NULL && L2 == NULL )
         return false;
@@ -1479,5 +1488,16 @@ bool columnasRepetidas(ListaColum L1, ListaColum L2){
         return columnasRepetidas( L1->sig, L2->sig );
 }
 
-
+/** Une las columnas de la tabla2 con las columnas de la tabla1 (Los agrega al final de la tabla1 )
+El entero pos indica desde que posicion de la tabla2 va a empezar a copiar  **/
+void unirColumnas(ListaColum L1, ListaColum L2, int pos){
+    while( L2 != NULL ){
+        while( L1->sig!= NULL )
+            L1 = L1->sig;
+        if( L2->nroColum >= pos ){
+            agregarColumna(L1, L2->nombre);
+        }
+        L2 = L2->sig;
+    }
+}
 
