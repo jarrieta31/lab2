@@ -1,3 +1,4 @@
+/*** LABARTORIO 2 EDA, Integrantes: Julio Arrieta, Mariano Castro y Guillermo Moreira **/
 #include <iostream>
 #include <stdio.h>
 #include <cstring>
@@ -621,15 +622,46 @@ TipoRet selectWhere(string nombreTabla2, string condicion, string nombreTabla1){
 TipoRet select(string nombreTabla2, string valoresColumnas, string nombreTabla1){
     TipoRet res = OK;
     extern ABBTabla t;
+
     ListaArg listaColumnas = crearListaArg();
     cargarListaArg(listaColumnas, valoresColumnas,':');//Guarda los nombres de las columnas en la lista
-///////////// Lo que esta aqui dentro es para que pruebes los parametros que llegan ////////////
-    cout<<"La tabla2 es-> "<<nombreTabla2<<endl;
-    cout<<"La tabla1 es-> "<<nombreTabla1<<endl;
-    cout<<"Y las columnas que pasaste son: "<<endl;
-    imprimirArg(listaColumnas);
-    cout<<"La cantidad de columnas que paseste es-> "<<lengthArg(listaColumnas); //Podes hacer un for con la cantidad de columnas
-///////////////////////////////////////////////////////////////////////////////////
+    if( valoresColumnas.empty() ){  // Valida qque no este vacio los valores de las columnas
+        cout<< "  No se indico ninguna columna"<<endl;
+        res = ERROR;
+        return res;
+    }
+    if( nombreTabla1.empty() ){  // Valida que el nombre de la tabla1 no este vacio
+        cout<< "  Falta el nombre de la tabla a copiar"<<endl;
+        res = ERROR;
+        return res;
+    }
+    if( nombreTabla2.empty() ){ // Valida que el nombre de la tabla2 no este vacio
+        cout<< "  Falta especificar el nombre de la nueva tabla"<<endl;
+        res = ERROR;
+        return res;
+    }
+    else{
+        if( miembro( nombreTabla2,t ) ){ //Si el nombre de la tabl2 ya existe retorna error
+            cout<< "  El nombre de la nueva tabla ya existe!"<<endl;
+            res = ERROR;
+            return res;
+        }
+    }
+    ABBTabla auxTabla1 = traerNodoTabla(nombreTabla1, t);
+    ListaColum auxColum1 = auxTabla1->columna;
+    int cantCampos = lengthArg(listaColumnas);
+
+    for(int i=1; i<=cantCampos; i++){ //Se chequean que todos los nombres de las columnas recibidos, existen en la tabla1
+        if( buscarColumna(auxColum1, traerParametro(listaColumnas, i)) == 1000 ){ //Si retorno mil significa que no lo encontro
+            cout<<"  La columna \""<<traerParametro(listaColumnas,i)<<"\" no existe en la tabla \""<<nombreTabla1<<"\""<<endl;
+            res = ERROR;
+            return res;
+        }
+    }
+
+
+
+    borrarListaArg(listaColumnas);//Borra toda la lista;
 }
 
 TipoRet join(string tabla1, string tabla2, string tabla3 ){//Junta la tabla 1 con la 2 y forman la 3
