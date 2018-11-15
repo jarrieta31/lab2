@@ -122,6 +122,7 @@ void insertarReg(string nombreTabla, string valoresTupla);//agrega un nuevo regi
 string traerDatosCeldas(ListaCelda L, string values, int pos);
 bool columnasRepetidas(ListaColum L1, ListaColum L2);//Verifica si hay columnas repetidas entre las columnas de 2 tablas, sin contar las PK
 void unirColumnas(ListaColum L1, ListaColum L2, int pos);//Une las columnas de la tabla2 con las columnas de la tabla1 (Los agrega al final de la tabla1 )
+int cantColumnas(ListaColum L);//Cuenta la cantidad de columnas que tiene una tabla
 
 int main(){
     extern ABBTabla t;
@@ -144,10 +145,10 @@ int main(){
     addCol("Clientes","CI");
     addCol("Clientes","Apodo");
     addCol("Clientes", "Direccion");
-    insertInto("Clientes","2345:Juan:18deJulio");
-    insertInto("Clientes","4711:Carlos:Asamblea234");
-    insertInto("Clientes","6545:Alex:Ricon420");
-    insertInto("Clientes","7823:Lucas:Artigas 611");
+    insertInto("Clientes","2345:Juasito:18deJulio");
+    insertInto("Clientes","4711:Carlitos:Asamblea234");
+    insertInto("Clientes","2311:Alexsito:Ricon420");
+    insertInto("Clientes","7823:Luquitas:Artigas 611");
     printDataTable("Empleados");
     printDataTable("Clientes");
 
@@ -640,6 +641,9 @@ TipoRet join(string tabla1, string tabla2, string tabla3 ){//Junta la tabla 1 co
     ListaTupla auxTupla2 = NULL;
     ListaColum auxColum2 = NULL;
     ListaCelda auxCelda2 = NULL;
+    int regCopiados = 0;
+    string valorPK;
+    string datos;
     if( miembro( tabla3, t)){ //Si la tabla tres ya existe retorna error
         cout<<"  La tabla "<<tabla3<<" ya existe"<<endl;
         return ( res = ERROR );
@@ -671,11 +675,35 @@ TipoRet join(string tabla1, string tabla2, string tabla3 ){//Junta la tabla 1 co
     createTable( tabla3 );                          //Crea la nueva tabla;
     ABBTabla auxTabla3 = traerNodoTabla(tabla3 , t);  //Trae la tabla3
     ListaColum auxColum3 = auxTabla3->columna;
-    unirColumnas(auxColum3, auxColum1, 1);
-    unirColumnas(auxColum3, auxColum2, 2);
-    cout<<"Hola mundo"<<endl;
-
-
+    unirColumnas(auxColum3, auxColum1, 1);         //Une todos los campos de la tabla1 en la nueva tabla (tabla3)
+    unirColumnas(auxColum3, auxColum2, 2);         //Une los campos desde la columna 2 de la tabla2 en la nueva tabla (tabla3)
+    auxTabla3->cantColumnas = cantColumnas(auxColum3); //Obtiene la cantidad de columnas
+    /********** Recorre la tabla1 ********/
+    auxTupla1 = auxTabla1->tupla->sig;    //Reinicia el puntero
+    while( auxTupla1 != NULL ){
+        auxCelda1 = auxTupla1->celda;
+        auxTupla2 = auxTabla2->tupla->sig; //Reinicia el puntero
+        valorPK =  auxCelda1->sig->info;
+        /********** Recorre la tabla2 ********/
+        bool encontrado = false;            //Esta variable pasa a true en dada tupla si encuentra un elemento que coincide
+        while( auxTupla2 != NULL ){         //Busca en tupla por tupla en la tabla2 los registros en los que la pk concuerde con la tabla1
+            encontrado = false;
+            auxCelda2 = auxTupla2->celda;
+            /*********************Copia solo los encontrados en la tabla2 *******************/
+            encontrado = compararCelda(auxCelda2, 1, '=', valorPK);//Compara el contenido de la celda nroColumncon con el valorFiltro y retorna un bool
+            if( encontrado == true ){//Si encuentra en valor chequea si la tabla existe de lo contrario la crea
+                datos = traerDatosCeldas(auxCelda1,"", 1);
+                datos += ":"+traerDatosCeldas(auxCelda2,"", 2);
+                insertarReg(tabla3 ,datos);
+                regCopiados++; //Cuenata los registros encontrados
+            }
+            auxTupla2 = auxTupla2->sig;  // Avanza a la siguiente tupla de la tabla2 (registros)
+        }
+        auxTupla1 = auxTupla1->sig;  // Avanza a la siguiente tupla de la tabla1 (registros)
+    }
+    cout<< "  Registros copiados "<<regCopiados<<endl;//Imprime la cantidad de registros copiados si encuentra alguno
+    res = OK;
+    return res;
 }
 
 
@@ -942,14 +970,14 @@ bool compararCelda(ListaCelda L, int nroCelda, char operador, string valor){
                 return false;
             }
         }
-        if( operador == '<' ){
+        if( operador == '>' ){
             if( valor.compare(L->info) < 0 )
                 return true;
             else
                 return false;
         }
 
-        if( operador == '>' ){
+        if( operador == '<' ){
             if( valor.compare(L->info) > 0 )
                 return true;
             else
@@ -1444,7 +1472,9 @@ string traerDatosCeldas(ListaCelda L, string values, int pos){
     if( L==NULL )
         return values;
     else{
-        if( L->nroCelda <= pos ){
+        if( L->nroCelda < pos )
+            return traerDatosCeldas(L->sig, values, pos);
+        if( L->nroCelda == pos ){
             return traerDatosCeldas(L->sig, values += L->info, pos);
         }else
             return traerDatosCeldas(L->sig, values +=":"+L->info, pos);
@@ -1501,3 +1531,12 @@ void unirColumnas(ListaColum L1, ListaColum L2, int pos){
     }
 }
 
+//Cuenta la cantidad de columnas que tiene una tabla
+int cantColumnas(ListaColum L){
+    if( L == NULL )
+        return 0;
+    if( L->nroColum == 0 )
+        return cantColumnas(L->sig);
+    else
+        return ( 1 + (cantColumnas(L->sig)));
+}
