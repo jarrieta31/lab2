@@ -169,11 +169,16 @@ TipoRet createTable(string nombreTabla){
     TipoRet res = OK;
     extern ABBTabla t;               //ABBTabla Global
     ABBTabla auxTabla = t;
+    if( nombreTabla.empty() ){  // Valida que el nombre de la tabla no este vacio
+        cout<< "  Falta el nombre de la tabla a crear"<<endl;
+        res = ERROR;
+        return res;
+    }
     if( miembro(nombreTabla,t) ){ //Si la tabla existe retorna error
         res = ERROR;
         return res;
     }
-    else{   //Si noo existe crea el nuevo nodo tabla
+    else{   //Si no existe crea el nuevo nodo tabla
         //obtenerPosicion(auxTabla, nombreTabla );//Obtiene la ubicacion para la nueva tabla segun su nombre
         insertNodoTabla(t, nombreTabla);//Recibe el nombre de una tabla y la crea en la posicion correcta
         return res;
@@ -622,9 +627,6 @@ TipoRet selectWhere(string nombreTabla2, string condicion, string nombreTabla1){
 TipoRet select(string nombreTabla2, string valoresColumnas, string nombreTabla1){
     TipoRet res = OK;
     extern ABBTabla t;
-
-    ListaArg listaColumnas = crearListaArg();
-    cargarListaArg(listaColumnas, valoresColumnas,':');//Guarda los nombres de las columnas en la lista
     if( valoresColumnas.empty() ){  // Valida qque no este vacio los valores de las columnas
         cout<< "  No se indico ninguna columna"<<endl;
         res = ERROR;
@@ -642,15 +644,16 @@ TipoRet select(string nombreTabla2, string valoresColumnas, string nombreTabla1)
     }
     else{
         if( miembro( nombreTabla2,t ) ){ //Si el nombre de la tabl2 ya existe retorna error
-            cout<< "  El nombre de la nueva tabla ya existe!"<<endl;
+            cout<< "  El nombre de la nueva tabla ya existe!" <<endl;
             res = ERROR;
             return res;
         }
     }
     ABBTabla auxTabla1 = traerNodoTabla(nombreTabla1, t);
     ListaColum auxColum1 = auxTabla1->columna;
+    ListaArg listaColumnas = crearListaArg();
+    cargarListaArg(listaColumnas, valoresColumnas,':');//Guarda los nombres de las columnas en la lista
     int cantCampos = lengthArg(listaColumnas);
-
     for(int i=1; i<=cantCampos; i++){ //Se chequean que todos los nombres de las columnas recibidos, existen en la tabla1
         if( buscarColumna(auxColum1, traerParametro(listaColumnas, i)) == 1000 ){ //Si retorno mil significa que no lo encontro
             cout<<"  La columna \""<<traerParametro(listaColumnas,i)<<"\" no existe en la tabla \""<<nombreTabla1<<"\""<<endl;
@@ -658,11 +661,44 @@ TipoRet select(string nombreTabla2, string valoresColumnas, string nombreTabla1)
             return res;
         }
     }
+    size_t posPK = valoresColumnas.find(auxColum1->sig->nombre);
+    if ( posPK == std::string::npos ){//Verifica si el usuario ingreso la columna PK, si no lo hizo la agrega al inicio
+        valoresColumnas = auxColum1->sig->nombre+":"+valoresColumnas;
+        borrarListaArg(listaColumnas);
+        cargarListaArg(listaColumnas, valoresColumnas,':');
+        cout << "  Ahora se le agrego la pk " << valoresColumnas << '\n';
+    }
+    //Verifica si el fomato de las columnas es el correcto, con la pk como primer columna
+    if( traerParametro(listaColumnas,1) != auxColum1->sig->nombre ){
+        res = ERROR;
+        cout <<"  El orden de las columnas no es valido \"" << valoresColumnas << "\""<<endl;
+        return res;
+    }
+    //Se crea la tabla2
+    createTable( nombreTabla2);
+    ABBTabla auxTabla2 = traerNodoTabla(nombreTabla2, t);//trae el puntero a la tabla2
+    ListaTupla auxTupla2 = auxTabla2->tupla;
+    ListaColum auxColum2 = auxTabla2->columna;
+    cantCampos = lengthArg(listaColumnas);//Obtiene nuevamente la cantidad de capos, por si se le agrego la pk
+    for(int i=1; i<=cantCampos; i++ ){ //Crea todos los campos en la tabla 2
+
+        agregarColumna(auxColum2, traerParametro(listaColumnas,i));
+    }
+    auxTabla2->cantColumnas = cantColumnas(auxTabla2->columna); //Cuenta las columnas creadas y actuliza el valor en la tabla2
+    ListaCelda auxCelda2 = NULL;
+    ListaTupla auxTupla1 = auxTabla1->tupla;
+    ListaCelda auxCelda1 = NULL;
+    //***Recorre todos los registros de la tabla 1, para llenar la nueva tabla con las columnas seleccionadas **********
+    while( auxTupla1 != NULL ){
+        auxCelda1 = auxTupla1->celda->sig; //Apunta a la primer celda del registro actual
 
 
+        auxTupla1 = auxTupla1->sig; //Avanza de registro en la tabla 1
+    }
 
     borrarListaArg(listaColumnas);//Borra toda la lista;
 }
+
 
 TipoRet join(string tabla1, string tabla2, string tabla3 ){//Junta la tabla 1 con la 2 y forman la 3
     TipoRet res = NO_IMPLEMENTADA;
@@ -1470,6 +1506,8 @@ void copiarColumnas(ListaColum colum1, ListaColum colum2){
 }
 
 void agregarColumna(ListaColum L, string nombre){
+    while( L->sig!=NULL)
+        L = L->sig;
     ListaColum nuevaColum = new nodoListaColum;
     L->sig = nuevaColum;
     nuevaColum->nombre = nombre;
@@ -1518,6 +1556,10 @@ string traerDatosCeldas(ListaCelda L, string values, int pos){
 void insertarReg(string nombreTabla, string valoresTupla){
     extern ABBTabla t;                           //ListaTabla Global
     ABBTabla auxTabla;
+    if( nombreTabla.empty() )  // Valida que el nombre de la tabla no este vacio
+        return;
+    if( valoresTupla.empty() )  // Valida que tenga valores
+        return;
     ListaTupla auxTupla = NULL;
     ListaArg listaValores = crearListaArg();            //crea una lista de valores para recibir los argumentos
     cargarListaArg(listaValores, valoresTupla, ':');    //carga los valores en una lista
