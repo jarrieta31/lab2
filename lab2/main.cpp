@@ -92,7 +92,6 @@ void imprimirArg(ListaArg L);           //Imprime los argumentos de la lista
 void borrarListaArg(ListaArg &L);
 void agregarArg(ListaArg L, string arg); //Agrega un nuevo parametro al final de la lista de parametros
 void cargarListaArg(ListaArg L, string allArg, char separador);
-//ListaTabla traerNodoTabla(ABBTabla &t, string nombreTabla); //Si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
 int buscarColumna(ListaColum L, string nombreColum); //Busca una columna por su nombre y retorna su posicion
 bool compararCelda(ListaCelda L, int nroCelda, char operador, string valor); //compara celdas y retorna un boolean
 bool buscarTuplaPorPK(ListaTupla &sonda, string pk);//Recibe la pk y busca la tupla que lo tenga, si no esta devuelve NULL
@@ -116,51 +115,26 @@ bool comienzaCon(string valor, string datoCelda); //Comprueba si el dato de una 
 void modificarCelda(ListaCelda &auxCelda, int nroCelda, string nuevoValor);
 void copiarColumnas(ListaColum colum1, ListaColum colum2);//Copia los nombres de la colum1 en la colum2
 void agregarColumna(ListaColum L, string nombre); //Agrega una columna al final de la lista, sin mensajes ni validaciones
-//void copiarCeldas(ListaCelda celdas1, ListaCelda celdas2);
-void agregarCelda(ListaCelda L, string info);
 void insertarReg(string nombreTabla, string valoresTupla);//agrega un nuevo registro
 //Recibe una lista de celdas llena, un string vacio y la posicion desde la cual se van a copiar los datos. Retorna un string en este formato "valor1:valor2:valor3"
 string traerDatosCeldas(ListaCelda L, string values, int pos);
 bool columnasRepetidas(ListaColum L1, ListaColum L2);//Verifica si hay columnas repetidas entre las columnas de 2 tablas, sin contar las PK
 void unirColumnas(ListaColum L1, ListaColum L2, int pos);//Une las columnas de la tabla2 con las columnas de la tabla1 (Los agrega al final de la tabla1 )
 int cantColumnas(ListaColum L);//Cuenta la cantidad de columnas que tiene una tabla
+string traerDato(ListaCelda LC, int pos);//Recibe la posicion y obtiene el dato de la celda indicada
 
 int main(){
     extern ABBTabla t;
-
     string comando;
-
-    createTable("Empleados");
-    addCol("Empleados","CI");
-    addCol("Empleados","Nombre");
-    addCol("Empleados", "Apellido");
-    insertInto("Empleados","2345:Juan:Alavarez");
-    insertInto("Empleados","4711:Carlos:Gonzalez");
-    insertInto("Empleados","6545:Alex:Simmer");
-    insertInto("Empleados","7823:Lucas:Garrido");
-    insertInto("Empleados","2731:Agustina:Martinez");
-    insertInto("Empleados","5389:Guillermo:Moreira");
-    insertInto("Empleados","3719:Julio:Arrieta");
-    insertInto("Empleados","4164:Mariano:Castro");
-    createTable("Clientes");
-    addCol("Clientes","CI");
-    addCol("Clientes","Apodo");
-    addCol("Clientes", "Direccion");
-    insertInto("Clientes","2345:Juasito:18deJulio");
-    insertInto("Clientes","4711:Carlitos:Asamblea234");
-    insertInto("Clientes","2311:Alexsito:Ricon420");
-    insertInto("Clientes","7823:Luquitas:Artigas 611");
-    printDataTable("Empleados");
-    printDataTable("Clientes");
 
     while(comando!="exit"){ //mantiene la terminal esperando ordenes
         getline(cin, comando);
         if( comando.empty()!=true )
             leerComando(t, comando);
         else
-            cout << "  No ha ingresado ningun comando" <<endl;
+            cout << "> No ha ingresado ningun comando" <<endl;
     }
-    cout<<endl<< "  Bye..." <<endl;
+    cout<<endl<< "> Bye..." <<endl;
 
     return 0;
 }
@@ -170,7 +144,7 @@ TipoRet createTable(string nombreTabla){
     extern ABBTabla t;               //ABBTabla Global
     ABBTabla auxTabla = t;
     if( nombreTabla.empty() ){  // Valida que el nombre de la tabla no este vacio
-        cout<< "  Falta el nombre de la tabla a crear"<<endl;
+        cout<<"> Falta el nombre de la tabla a crear"<<endl;
         res = ERROR;
         return res;
     }
@@ -224,7 +198,7 @@ TipoRet addCol(string nombreTabla, string nombreCol){
             while( auxColum->sig != NULL ){//Recorre la lista de columnas y cheque que no exista una columna con el mismo nombre
                 auxColum = auxColum->sig;
                 if( auxColum->nombre == nombreCol ){
-                    cout<<"  ¡Operacion no valida!. Ya existe una columna llamada \""<<nombreCol<<"\""<<endl;
+                    cout<<"> ¡Operacion no valida!. Ya existe una columna llamada \""<<nombreCol<<"\""<<endl;
                     res = ERROR;
                     return res;
                 }
@@ -242,13 +216,13 @@ TipoRet addCol(string nombreTabla, string nombreCol){
             res = OK;
             return res;
         }else{
-            cout<<"  ¡Operacion no valida!. La tabla ya tiene registros cargados"<<endl;
+            cout<<"> ¡Operacion no valida!. La tabla ya tiene registros cargados"<<endl;
             res = ERROR;
             return res;
         }
 
     }
-    cout<<"  La tabla \""<<nombreTabla<<"\" no existe."<<endl;
+    cout<<"> La tabla \""<<nombreTabla<<"\" no existe."<<endl;
     res = ERROR;
     return res;
 }
@@ -281,7 +255,7 @@ TipoRet dropCol(string nombreTabla, string nombreCol){
                         ordenarIndiceTupla(auxTabla->tupla);
                     }
                     if( auxColum->sig->PK==true && auxTabla->cantColumnas>1 ){//si hay mas de una columna no se pude borrar la pk
-                        cout<<"  La columna \""<<nombreCol<<"\" es Clave Primaria y hay otras columnas que se identifican por ella."<<endl;
+                        cout<<"> La columna \""<<nombreCol<<"\" es Clave Primaria y hay otras columnas que se identifican por ella."<<endl;
                         res = ERROR;
                         return res;
                     }
@@ -296,18 +270,18 @@ TipoRet dropCol(string nombreTabla, string nombreCol){
                             ordenarNroCelda( auxTupla->celda ); //ordena el indice de la celda
                             auxTupla = auxTupla->sig;       //Avanza a la  siguiente tupla
                         }
-                        cout<<"  Columna \""<<nombreCol<<"\" eliminada"<<endl;
+                        cout<<"> Columna \""<<nombreCol<<"\" eliminada"<<endl;
                         res = OK;
                         return res;
                     }
                 }
                 auxColum = auxColum->sig;
             }
-            cout<<"  La Columna \""<<nombreCol<<"\" no existe."<<endl;
+            cout<<"> La Columna \""<<nombreCol<<"\" no existe."<<endl;
             res = ERROR;
             return res;
     }else{  //Si la tabla no existe
-        cout<<"  La tabla \""<<nombreTabla<<"\" no existe."<<endl;
+        cout<<"> La tabla \""<<nombreTabla<<"\" no existe."<<endl;
         res = ERROR;
         return res;
     }
@@ -326,11 +300,11 @@ TipoRet insertInto(string nombreTabla, string valoresTupla){
             auxTupla = auxTabla->tupla;
             string pk = traerParametro(listaValores, 1); //obtiene la pk cursada
             if(agregarTuplaOrdenada(auxTupla, pk, listaValores)){  //Devuelve true si pudo insertar la tupla de forma ordenada
-                cout<<"  Nuevo registro agregado con exito"<<endl;
+                cout<<"> Nuevo registro agregado con exito"<<endl;
                 borrarListaArg(listaValores);
                 return res;
             }else{
-                cout<<"  No se pudo insertar el registro"<<endl;
+                cout<<"> No se pudo insertar el registro"<<endl;
                 res = ERROR;
                 borrarListaArg(listaValores);
                 return res;
@@ -363,7 +337,7 @@ TipoRet deleteFrom(string nombreTabla, string condicion){
                 if( operador!='-' ){
                     encontrado = compararCelda(auxCelda, nroColumna, operador, valorFiltro);
                     if( encontrado == true ){
-                        cout<<"  Registro borrado-> "<< auxCelda->sig->info <<":"<< auxCelda->sig->sig->info<<":"<<auxCelda->sig->sig->sig->info  <<endl;
+                        cout<<"> Registro borrado-> "<< auxCelda->sig->info <<":"<< auxCelda->sig->sig->info<<":"<<auxCelda->sig->sig->sig->info  <<endl;
                         borrarCeldasTupla(auxCelda);
                         borrarTupla(auxTupla);
                         regAfectados++; //Cuenata los registros encontrados
@@ -381,14 +355,14 @@ TipoRet deleteFrom(string nombreTabla, string condicion){
             }
             borrarListaArg(listaCondicion);
             if( regAfectados == 0 ) //Si no ecuentra el valor
-                cout<< "  No existe ninguna celda con el valor \""<<valorFiltro;
+                cout<<"> No existe ninguna celda con el valor \""<<valorFiltro;
             else
-                cout<< "  Registros afectados "<<regAfectados;//Imprime la cantidad de registros afectados si encuentra alguno
+                cout<<"> Registros afectados "<<regAfectados;//Imprime la cantidad de registros afectados si encuentra alguno
             cout<<msjRespuesta<<endl; //Imprime en pantalla la respuesta
             return res;
         }
         else{
-            cout<<"  No hay campo con ese nombre";
+            cout<<"> No hay campo con ese nombre";
             borrarListaArg(listaCondicion);
             res = ERROR;
             return res;
@@ -413,7 +387,7 @@ TipoRet update(string nombreTabla, string condicionModificar, string columnaModi
     if( auxTabla != NULL){
         int nroColumnaMod = buscarColumna(auxTabla->columna, columnaModificar); //si el nombre de la columna existe retorna su posicion, si no retorna 1000
         if( nroColumnaMod == 1 ){
-            cout<<"  No se puede modificar la clave primaria"<<endl;
+            cout<<"> No se puede modificar la clave primaria"<<endl;
             return res = ERROR;
         }
         int nroColumFiltro = buscarColumna(auxTabla->columna, columnaFiltro);
@@ -423,7 +397,7 @@ TipoRet update(string nombreTabla, string condicionModificar, string columnaModi
                 auxCelda = auxTupla->celda;
                 if( operador != '-' ){
                     if( compararCelda( auxCelda, nroColumFiltro, operador, valorFiltro) ){
-                        cout<<"  Registro modifcado-> "<< auxCelda->sig->info<<":"<< auxCelda->sig->sig->info<<":"<<auxCelda->sig->sig->sig->info<<endl;
+                        cout<<"> Registro modifcado-> "<< auxCelda->sig->info<<":"<< auxCelda->sig->sig->info<<":"<<auxCelda->sig->sig->sig->info<<endl;
                         modificarCelda( auxCelda, nroColumnaMod, valorModificar);
                         regAfectados++;
                     }
@@ -436,8 +410,8 @@ TipoRet update(string nombreTabla, string condicionModificar, string columnaModi
             }
             borrarListaArg(listaCondicion);
             if( operador == '-')
-                cout<<"  Actualizando todos los registros"<<endl;
-            cout<<"  Registros afectados "<<regAfectados<<endl;
+                cout<<"> Actualizando todos los registros"<<endl;
+            cout<<"> Registros afectados "<<regAfectados<<endl;
             return res;
         }
         else{
@@ -496,7 +470,7 @@ TipoRet printDataTable(string nombreTabla){
         return res;
 
     }
-    cout<<"  La tabla \""<<nombreTabla<<"\" no existe."<<endl;
+    cout<<"> La tabla \""<<nombreTabla<<"\" no existe."<<endl;
     res = ERROR;
     return res;
 }
@@ -504,36 +478,48 @@ TipoRet printDataTable(string nombreTabla){
 void mostrarAyuda(){
     cout <<endl<< "\tAYUDA DE COMANDOS: "<<endl;
     cout << "Nota: todos los comandos son 'case sensitive' "<<endl;
-    cout << "* help -> Imprimir ayuda" <<endl<<endl;
+    cout << "* help: Imprimir ayuda" <<endl<<endl;
     cout << "* Operadores validos para condicines en consultas:"<<endl;
     cout << " (=) igual a ..."<<endl;
     cout << " (!) diferente a ..."<<endl;
     cout << " (*) comienza con ..."<<endl;
     cout << " (-) todo ..."<<endl<<endl;
-    cout << "* createTable(nombreTabla) -> Crear tabla"<<endl;
+    cout << "* createTable(nombreTabla): Crear tabla"<<endl;
     cout << " Ejem: crear la tabla Empleados"<<endl;
     cout << " Orden:  createTable(Empleados)"<<endl<<endl;
-    cout << "* dropTable(nombreTabla) -> Eliminar tabla"<<endl;
+    cout << "* dropTable(nombreTabla): Eliminar tabla"<<endl;
     cout << " Ejem: eliminar la tabla Productos"<<endl;
     cout << " Orden: dropTable(Productos)"<<endl<<endl;
-    cout << "* addCol(nombreTabla, nombreCol) -> Agregar columna"<<endl;
+    cout << "* addCol(nombreTabla, nombreCol): Agregar columna"<<endl;
     cout << " Ejem: agregar columna Apellido en la tabla Empleados"<<endl;
     cout << " Orden: addCol(Empleados, Apellido)"<<endl<<endl;
-    cout << "* dropCol(nombreTabla, nombreCol) -> Eliminar columna"<<endl;
+    cout << "* dropCol(nombreTabla, nombreCol): Eliminar columna"<<endl;
     cout << " Ejem: elimina la columna idProyecto de la tabla Proyectos"<<endl;
     cout << " Orden: dropCol(Proyectos, idProyecto)"<<endl<<endl;
-    cout << "* insertInto(nombreTabla, valoresTupla) -> Insertar registro"<<endl;
+    cout << "* insertInto(nombreTabla, valoresTupla): Insertar registro"<<endl;
     cout << " Ejem: agregar a Telma Perez en la tabla Personas "<<endl;
     cout << " Orden: insertInto(Personas, 3333111: Telma: Perez)"<<endl<<endl;
-    cout << "* deleteFrom(nombreTabla, condicion) -> Eliminar registro"<<endl;
+    cout << "* deleteFrom(nombreTabla, condicion): Eliminar registro"<<endl;
     cout << " Ejem: elimina todos los registros de apellido Perez, de Personas"<<endl;
     cout << " Orden: deleteFrom(Personas, apellido=Perez)"<<endl<<endl;
-    cout << "* update(nombreTabla, condicion, columna, valor) -> Atualizar tabla" <<endl;
+    cout << "* update(nombreTabla, condicion, columna, valor): Atualizar tabla" <<endl;
     cout << " Ejem: modifica el apellido a Ramos a todos los de nombre Pepe"<<endl;
     cout << " Orden: update(Personas,Nombre=Pepe,apellido,Ramos)"<<endl<<endl;
-    cout << "* printDataTable(Clientes) -> Muestrar contenido de la tabla"<<endl;
+    cout << "* printDataTable(Clientes): Muestrar contenido de la tabla"<<endl;
     cout << " Ejem: muestra el contenido de la tabla Clientes"<<endl;
     cout << " Orden: printDataTable(Clientes)"<<endl<<endl;
+    cout << "* selectWhere(nombreTabla2,Condicion,nombreTable1): Copia tabla1 en tabla2"<<endl;
+    cout << " Ejem: copia los registros con apellido Perez de Clientes a Clientes2"<<endl;
+    cout << " Orden: selectWhere(Clientes2,Apellido=Perez,Clientes)"<<endl<<endl;
+    cout << "* select(nombreTabla2,Columnas,nombreTable1): Copia columnas de tabla1 a tabla2"<<endl;
+    cout << " Ejem: copia la PK con los campos apellido y direccion de Clientes a Clientes2"<<endl;
+    cout << " Orden: select(Clientes2,ci:Apellido,Direccion,Clientes)"<<endl<<endl;
+    cout << "* join(nombreTabla1,nombreTabla2,nombreTable3): junta tabla1 y tabla2"<<endl;
+    cout << " Ejem: junta la tabla Empleados y Clientes en una nueva llamada EC"<<endl;
+    cout << " Orden: join(Empleados,Clientes,EC)"<<endl<<endl;
+    cout << "* printTables(): mostrar todas las tablas"<<endl;
+    cout << " Ejem: muestra en pantalla todas las tablas "<<endl;
+    cout << " Orden: printTables()"<<endl<<endl;
 }
 
 TipoRet selectWhere(string nombreTabla2, string condicion, string nombreTabla1){
@@ -549,18 +535,18 @@ TipoRet selectWhere(string nombreTabla2, string condicion, string nombreTabla1){
     string valorFiltro   = traerParametro(listaCondicion,2); //Valor que debe cumplir el filtro
     int regCopiados = 0;
     if( nombreTabla1.empty() ){  // Valida que el nombre de la tabla1 no este vacio
-        cout<< "  Falta el nombre de la tabla a copiar"<<endl;
+        cout<<"> Falta el nombre de la tabla a copiar"<<endl;
         res = ERROR;
         return res;
     }
     if( nombreTabla2.empty() ){ // Valida que el nombre de la tabla2 no este vacio
-        cout<< "  Falta especificar el nombre de la nueva tabla"<<endl;
+        cout<<"> Falta especificar el nombre de la nueva tabla"<<endl;
         res = ERROR;
         return res;
     }
     else{
         if( miembro( nombreTabla2,t ) ){ //Si el nombre de la tabl2 ya existe retorna error
-            cout<< "  El nombre de la nueva tabla ya existe!"<<endl;
+            cout<<"> El nombre de la nueva tabla ya existe!"<<endl;
             res = ERROR;
             return res;
         }
@@ -603,14 +589,14 @@ TipoRet selectWhere(string nombreTabla2, string condicion, string nombreTabla1){
             }
             borrarListaArg(listaCondicion);
             if( regCopiados == 0 ) //Si no ecuentra el valor
-                cout<< "  No existe ninguna celda con el valor \""<<valorFiltro;
+                cout<<"> No existe ninguna celda con el valor \""<<valorFiltro;
             else
-                cout<< "  Registros copiados "<<regCopiados<<endl;//Imprime la cantidad de registros copiados si encuentra alguno
+                cout<<"> Registros copiados "<<regCopiados<<endl;//Imprime la cantidad de registros copiados si encuentra alguno
             res = OK;
             return res;
         }
         else{
-            cout<<"  No hay campo con ese nombre";
+            cout<<"> No hay campo con ese nombre";
             borrarListaArg(listaCondicion);
             res = ERROR;
             return res;
@@ -627,24 +613,27 @@ TipoRet selectWhere(string nombreTabla2, string condicion, string nombreTabla1){
 TipoRet select(string nombreTabla2, string valoresColumnas, string nombreTabla1){
     TipoRet res = OK;
     extern ABBTabla t;
+    int pos = 0;
+    int regCopiados = 0;
+    string values;
     if( valoresColumnas.empty() ){  // Valida qque no este vacio los valores de las columnas
-        cout<< "  No se indico ninguna columna"<<endl;
+        cout<<"> No se indico ninguna columna"<<endl;
         res = ERROR;
         return res;
     }
     if( nombreTabla1.empty() ){  // Valida que el nombre de la tabla1 no este vacio
-        cout<< "  Falta el nombre de la tabla a copiar"<<endl;
+        cout<<"> Falta el nombre de la tabla a copiar"<<endl;
         res = ERROR;
         return res;
     }
     if( nombreTabla2.empty() ){ // Valida que el nombre de la tabla2 no este vacio
-        cout<< "  Falta especificar el nombre de la nueva tabla"<<endl;
+        cout<<"> Falta especificar el nombre de la nueva tabla"<<endl;
         res = ERROR;
         return res;
     }
     else{
         if( miembro( nombreTabla2,t ) ){ //Si el nombre de la tabl2 ya existe retorna error
-            cout<< "  El nombre de la nueva tabla ya existe!" <<endl;
+            cout<<"> El nombre de la nueva tabla ya existe!" <<endl;
             res = ERROR;
             return res;
         }
@@ -656,7 +645,7 @@ TipoRet select(string nombreTabla2, string valoresColumnas, string nombreTabla1)
     int cantCampos = lengthArg(listaColumnas);
     for(int i=1; i<=cantCampos; i++){ //Se chequean que todos los nombres de las columnas recibidos, existen en la tabla1
         if( buscarColumna(auxColum1, traerParametro(listaColumnas, i)) == 1000 ){ //Si retorno mil significa que no lo encontro
-            cout<<"  La columna \""<<traerParametro(listaColumnas,i)<<"\" no existe en la tabla \""<<nombreTabla1<<"\""<<endl;
+            cout<<"> La columna \""<<traerParametro(listaColumnas,i)<<"\" no existe en la tabla \""<<nombreTabla1<<"\""<<endl;
             res = ERROR;
             return res;
         }
@@ -686,17 +675,28 @@ TipoRet select(string nombreTabla2, string valoresColumnas, string nombreTabla1)
     }
     auxTabla2->cantColumnas = cantColumnas(auxTabla2->columna); //Cuenta las columnas creadas y actuliza el valor en la tabla2
     ListaCelda auxCelda2 = NULL;
-    ListaTupla auxTupla1 = auxTabla1->tupla;
+    ListaTupla auxTupla1 = auxTabla1->tupla->sig;
     ListaCelda auxCelda1 = NULL;
     //***Recorre todos los registros de la tabla 1, para llenar la nueva tabla con las columnas seleccionadas **********
     while( auxTupla1 != NULL ){
         auxCelda1 = auxTupla1->celda->sig; //Apunta a la primer celda del registro actual
 
-
+        for(int i=1; i <= lengthArg(listaColumnas) ; i++ ){
+            pos = buscarColumna(auxColum1 ,traerParametro(listaColumnas, i));
+            if( i == 1 ){
+                values = traerDato(auxCelda1, pos);
+                continue;
+            }
+            values = values+":"+traerDato(auxCelda1, pos);
+        }
+        insertarReg(nombreTabla2, values); //Inserta un nuevo registro en la tabla 2
+        regCopiados++;
         auxTupla1 = auxTupla1->sig; //Avanza de registro en la tabla 1
     }
-
     borrarListaArg(listaColumnas);//Borra toda la lista;
+    cout<<"> Registros copiados "<<regCopiados<<endl;//Imprime la cantidad de registros copiados si encuentra alguno
+    res = OK;
+    return res;
 }
 
 
@@ -713,31 +713,31 @@ TipoRet join(string tabla1, string tabla2, string tabla3 ){//Junta la tabla 1 co
     string valorPK;
     string datos;
     if( miembro( tabla3, t)){ //Si la tabla tres ya existe retorna error
-        cout<<"  La tabla "<<tabla3<<" ya existe"<<endl;
+        cout<<"> La tabla "<<tabla3<<" ya existe"<<endl;
         return ( res = ERROR );
     }
     ABBTabla auxTabla1 = traerNodoTabla(tabla1,t); //Trae el nodo de la tabla1
     ABBTabla auxTabla2 = traerNodoTabla(tabla2,t); //Trae el nodo de la tabla2
     if( auxTabla1==NULL ){
-        cout<<"  La tabla "<<tabla1<<" no existe"<<endl;
+        cout<<"> La tabla "<<tabla1<<" no existe"<<endl;
         return ( res = ERROR );
     }
     if( auxTabla2==NULL ){
-        cout<<"  La tabla "<<tabla2<<" no existe"<<endl;
+        cout<<"> La tabla "<<tabla2<<" no existe"<<endl;
         return ( res = ERROR );
     }
     if( auxTabla1->cantColumnas < 1 || auxTabla2->cantColumnas < 1 ){//Valida que la tabla1 y 2 tengan almenos un campo
-        cout<<"  No hay columnas suficientes"<<endl;
+        cout<<"> No hay columnas suficientes"<<endl;
         return ( res = ERROR );
     }
     if( auxTabla1->columna->sig->nombre.compare(auxTabla2->columna->sig->nombre) != 0 ){//Valida que la tabla1 y 2 tengan almenos un campo
-        cout<<"  Las claves primarias no concuerdan"<<endl;
+        cout<<"> Las claves primarias no concuerdan"<<endl;
         return ( res = ERROR );
     }
     auxColum1 = auxTabla1->columna;
     auxColum2 = auxTabla2->columna;
     if( columnasRepetidas(auxColum1, auxColum2) ){ //Verifica si hay columnas repetidas en las tablas, sin contar las pk
-        cout<<"  Existen columnas repetidas en las tablas"<<endl;
+        cout<<"> Existen columnas repetidas en las tablas"<<endl;
         return ( res = ERROR );
     }
     createTable( tabla3 );                          //Crea la nueva tabla;
@@ -769,7 +769,7 @@ TipoRet join(string tabla1, string tabla2, string tabla3 ){//Junta la tabla 1 co
         }
         auxTupla1 = auxTupla1->sig;  // Avanza a la siguiente tupla de la tabla1 (registros)
     }
-    cout<< "  Registros copiados "<<regCopiados<<endl;//Imprime la cantidad de registros copiados si encuentra alguno
+    cout<<"> Registros copiados "<<regCopiados<<endl;//Imprime la cantidad de registros copiados si encuentra alguno
     res = OK;
     return res;
 }
@@ -777,7 +777,10 @@ TipoRet join(string tabla1, string tabla2, string tabla3 ){//Junta la tabla 1 co
 
 TipoRet printTables(){
     extern ABBTabla t;
-    imprimirArbol(t);
+    if( t == NULL )
+        cout<<" No hay datos"<<endl<<endl;
+    else
+        imprimirArbol(t);
 }
 
 /****************   LEE EL INGRESO DE LOS COMANDOS   ***********************/
@@ -811,9 +814,9 @@ void leerComando(ABBTabla t, string comando){
         condicion = traerParametro(listaArg, 2);
         res = selectWhere(tabla2, condicion, tabla1);
         if( res == 0 )
-            cout<< "  Query OK -> Se copio la tabla \""<<tabla1<<"\" en la tabla \""<<tabla2<<"\""<<endl<<endl;
+            cout<< "> Query OK: Se copio la tabla \""<<tabla1<<"\" en la tabla \""<<tabla2<<"\""<<endl<<endl;
         if( res == 1)
-            cout<< "  Query ERROR -> Al copiar la tabla \""<<tabla1<<"\""<<endl<<endl;
+            cout<< "> Query ERROR: Al copiar la tabla \""<<tabla1<<"\""<<endl<<endl;
         return;
     }
 
@@ -823,9 +826,9 @@ void leerComando(ABBTabla t, string comando){
         columnas = traerParametro(listaArg,2);
         res = select(tabla2, columnas, tabla1);
         if( res == 0 )
-            cout<< "  Query OK -> Se copio la tabla \""<<tabla1<<"\" en la tabla \""<<tabla2<<"\""<<endl<<endl;
+            cout<< "> Query OK: Se copio la tabla \""<<tabla1<<"\" en la tabla \""<<tabla2<<"\""<<endl<<endl;
         if( res == 1)
-            cout<< "  Query ERROR -> Al copiar la tabla \""<<tabla1<<"\""<<endl<<endl;
+            cout<< "> Query ERROR: Al copiar la tabla \""<<tabla1<<"\""<<endl<<endl;
         return;
     }
 
@@ -835,9 +838,9 @@ void leerComando(ABBTabla t, string comando){
         tabla3 = traerParametro(listaArg,3);
         res = join(tabla1, tabla2, tabla3);
         if( res == 0 )
-            cout<< "  Query OK -> Tabla \""<<tabla1<<"\" se junto con \""<<tabla2<<"\""<<endl<<endl;
+            cout<< "> Query OK: Tabla \""<<tabla1<<"\" se junto con \""<<tabla2<<"\""<<endl<<endl;
         if( res == 1)
-            cout<< "  Query ERROR -> Al crear juntar las tablas \""<<tabla1<<"\" y \""<<tabla2<<"\""<<endl<<endl;
+            cout<< "> Query ERROR: Al crear juntar las tablas \""<<tabla1<<"\" y \""<<tabla2<<"\""<<endl<<endl;
         return;
     }
 
@@ -845,18 +848,18 @@ void leerComando(ABBTabla t, string comando){
         nombreTabla = traerParametro(listaArg,1);
         res = createTable(nombreTabla);
         if( res == 0 )
-            cout<< "  Query OK -> Se creo la tabla \""<<nombreTabla<<"\""<<endl<<endl;
+            cout<< "> Query OK: Se creo la tabla \""<<nombreTabla<<"\""<<endl<<endl;
         if( res == 1)
-            cout<< "  Query ERROR -> La tabla "<<nombreTabla<<" ya existe"<<endl<<endl;
+            cout<< "> Query ERROR: La tabla "<<nombreTabla<<" ya existe"<<endl<<endl;
         return;
     }
 
     if( sentencia=="printTables" ){
         res = printTables();
         if( res == 0 )
-            cout<< "  Query OK"<<endl<<endl;
+            cout<< "> Query OK"<<endl<<endl;
         if( res == 1)
-            cout<< "  Query ERROR"<<endl<<endl;
+            cout<< "> Query ERROR"<<endl<<endl;
         return;
     }
 
@@ -864,9 +867,9 @@ void leerComando(ABBTabla t, string comando){
         nombreTabla = traerParametro(listaArg,1);
         res = dropTable(nombreTabla);
         if( res == 0 )
-            cout<< "  Query OK -> La Tabla \""<<nombreTabla<<"\" fue eliminada"<<endl<<endl;
+            cout<< "> Query OK: La Tabla \""<<nombreTabla<<"\" fue eliminada"<<endl<<endl;
         if( res == 1 )
-            cout<< "  Query ERROR -> La tabla \""<<nombreTabla<<"\" no existe"<<endl<<endl;
+            cout<< "> Query ERROR: La tabla \""<<nombreTabla<<"\" no existe"<<endl<<endl;
         return;
     }
 
@@ -875,11 +878,11 @@ void leerComando(ABBTabla t, string comando){
         string nombreColumna = traerParametro(listaArg, 2);//obtiene e nombre de la columna ha agregar
         res = addCol(nombreTabla, nombreColumna);
         if(  res == 0 )
-            cout<< "  Query OK -> La columna \""<<nombreColumna<<"\" ha sido creada"<<endl<<endl;
+            cout<< "> Query OK: La columna \""<<nombreColumna<<"\" ha sido creada"<<endl<<endl;
         if( res == 1)
-            cout<< "  Query ERROR -> No se puedo crear la columna \""<<nombreColumna<<"\""<<endl<<endl;
+            cout<< "> Query ERROR: No se puedo crear la columna \""<<nombreColumna<<"\""<<endl<<endl;
         if( res == 2 )
-            cout<< "  Query ERROR -> No se realizo la operacion"<<endl<<endl;
+            cout<< "> Query ERROR: No se realizo la operacion"<<endl<<endl;
         return;
     }
 
@@ -888,11 +891,11 @@ void leerComando(ABBTabla t, string comando){
         string nombreColumna = traerParametro(listaArg, 2);
         res = dropCol(nombreTabla, nombreColumna);
         if(  res == 0 )
-            cout<< "  Query OK -> La columna \""<<nombreColumna<<"\" ha sido eliminada"<<endl<<endl;
+            cout<< "> Query OK: La columna \""<<nombreColumna<<"\" ha sido eliminada"<<endl<<endl;
         if( res == 1)
-            cout<< "  Query ERROR -> No se puedo eliminar la columna \""<<nombreColumna<<"\""<<endl<<endl;
+            cout<< "> Query ERROR: No se puedo eliminar la columna \""<<nombreColumna<<"\""<<endl<<endl;
         if( res == 2 )
-            cout<< "  Query ERROR -> No se realizo la operacion"<<endl<<endl;
+            cout<< "> Query ERROR: No se realizo la operacion"<<endl<<endl;
         return;
     }
 
@@ -901,11 +904,11 @@ void leerComando(ABBTabla t, string comando){
         string valoresTupla = traerParametro(listaArg, 2);
         res = insertInto(nombreTabla, valoresTupla);
         if(  res == 0 )
-            cout<< "  Query OK -> Nuevo resitro en la tabla \""<<nombreTabla<<"\""<<endl<<endl;
+            cout<< "> Query OK: Nuevo resitro en la tabla \""<<nombreTabla<<"\""<<endl<<endl;
         if( res == 1)
-            cout<< "  Query ERROR -> No se puedo agregar el registro en la tabla \""<<nombreTabla<<"\""<<endl<<endl;
+            cout<< "> Query ERROR: No se puedo agregar el registro en la tabla \""<<nombreTabla<<"\""<<endl<<endl;
         if( res == 2 )
-            cout<< "  Query ERROR -> No se realizo la operacion"<<endl<<endl;
+            cout<< "> Query ERROR: No se realizo la operacion"<<endl<<endl;
         return;
 
     }
@@ -914,11 +917,11 @@ void leerComando(ABBTabla t, string comando){
         string condicionEliminar = traerParametro(listaArg, 2);
         res = deleteFrom(nombreTabla, condicionEliminar);
         if(  res == 0 )
-            cout<< "  Query OK "<<endl<<endl;
+            cout<< "> Query OK "<<endl<<endl;
         if( res == 1)
-            cout<< "  Query ERROR -> Se produjo un error al intentar eliminar registros"<<endl<<endl;
+            cout<< "> Query ERROR: Se produjo un error al intentar eliminar registros"<<endl<<endl;
         if( res == 2 )
-            cout<< "  Query ERROR -> No se realizo la operacion"<<endl<<endl;
+            cout<< "> Query ERROR: No se realizo la operacion"<<endl<<endl;
         return;
 
     }
@@ -929,11 +932,11 @@ void leerComando(ABBTabla t, string comando){
         string valoModificar = traerParametro(listaArg, 4);
         res = update(nombreTabla, condModificar, columna, valoModificar);
         if(  res == 0 )
-            cout<< "  Query OK"<<endl<<endl;
+            cout<< "> Query OK"<<endl<<endl;
         if( res == 1)
-            cout<< "  Query ERROR -> Error al actulizar el registro"<<endl<<endl;
+            cout<< "> Query ERROR: Error al actulizar el registro"<<endl<<endl;
         if( res == 2 )
-            cout<< "  Query ERROR -> No se realizo la operacion"<<endl<<endl;
+            cout<< "> Query ERROR: No se realizo la operacion"<<endl<<endl;
         return;
     }
 
@@ -941,15 +944,15 @@ void leerComando(ABBTabla t, string comando){
         nombreTabla = traerParametro(listaArg,1);
         res = printDataTable(nombreTabla);
         if( res == 0 )
-            cout<< "  Query OK"<<endl<<endl;
+            cout<< "> Query OK"<<endl<<endl;
         if( res == 1 )
-            cout<< "  Query ERROR -> No se pudo mostrar la tabla\""<< nombreTabla <<"\""<<endl<<endl;
+            cout<< "> Query ERROR: No se pudo mostrar la tabla"<< nombreTabla <<"\""<<endl<<endl;
         return;
     }
     if( sentencia == "help"  )//  mostrarAyuda()
         mostrarAyuda();
     if( sentencia!="join" && sentencia!="printTables" && sentencia!="select" && sentencia!="selectWhere" && sentencia!="createTable" && sentencia!="dropTable" && sentencia!="addCol" && sentencia!="dropCol" && sentencia!="insertInto" && sentencia!="deleteFrom" && sentencia!="update" && sentencia!="printDataTable" && sentencia!="help" && sentencia!="exit" )
-        cout << "  ¡EL comando '" << comando <<"' no es valido!"<<endl<<endl;
+        cout << "> ¡EL comando '" << comando <<"' no es valido!"<<endl<<endl;
 
 }
 
@@ -1328,7 +1331,7 @@ void ordenarNroColum(ListaColum &auxColum){
     if( auxColum->ant == NULL ){
         auxColum->nroColum = 0;
         ordenarNroColum( auxColum->sig );
-    }else{//void agregarCeldaFinal(ListaCelda &auxCelda, string dato);//agrega nueva celda al final de la lista
+    }else{
         auxColum->nroColum = auxColum->ant->nroColum +1 ;
         ordenarNroColum( auxColum->sig );
     }
@@ -1371,7 +1374,7 @@ void destruirNodo(ABBTabla nodo){
 void imprimirArbol( ABBTabla t){ //Recorre en orden y muestra los elementos en pantalla
     if( t != NULL ){
         imprimirArbol(t->izq);
-        cout << t->nombre<<endl ;
+        cout <<"  "<<t->nombre<<endl ;
         imprimirArbol(t->der);
     }
 }
@@ -1517,24 +1520,7 @@ void agregarColumna(ListaColum L, string nombre){
     if( L->ant == NULL )  // Verifica si la columna a agregar debe ser PK o no
         nuevaColum->PK = true;
 }
-/*
-void copiarCeldas(ListaCelda celdas1, ListaCelda celdas2){
-    if( celdas1->sig != NULL ){
-        if( celdas2->sig == NULL )
-            agregarCelda(celdas2, celdas1->sig->info);
-        copiarCeldas(celdas1->sig, celdas2->sig);
-    }
-}
-*/
 
-void agregarCelda(ListaCelda L, string info){
-    ListaCelda nuevaCelda = new nodoListaCelda;
-    L->sig = nuevaCelda;
-    nuevaCelda->info = info;
-    nuevaCelda->sig = NULL;
-    nuevaCelda->ant = L;
-    nuevaCelda->nroCelda = nuevaCelda->ant->nroCelda+1;
-}
 
 /** Obtiene los datos de una lista de celdas (registro) y los retorna como estring con formato valor1:valor2:valor3
 EL string values debe ser vacio y el int pos indica la primer posicion a copiar **/
@@ -1552,7 +1538,7 @@ string traerDatosCeldas(ListaCelda L, string values, int pos){
 
 }
 
-/**Version simplificada para insertar datos en una tabla */
+/** Version simplificada para insertar datos en una tabla */
 void insertarReg(string nombreTabla, string valoresTupla){
     extern ABBTabla t;                           //ListaTabla Global
     ABBTabla auxTabla;
@@ -1578,7 +1564,7 @@ void insertarReg(string nombreTabla, string valoresTupla){
         }
     }
     else{
-        cout<<"  La tabla a copiar \""<<nombreTabla<<"\" no existe"<<endl;
+        cout<<"> La tabla a copiar \""<<nombreTabla<<"\" no existe"<<endl;
     }
 }
 
@@ -1613,4 +1599,12 @@ int cantColumnas(ListaColum L){
         return cantColumnas(L->sig);
     else
         return ( 1 + (cantColumnas(L->sig)));
+}
+
+// Trae el dato de la posicion pos
+string traerDato(ListaCelda LC, int pos){
+    string dato = "";
+    if( LC == NULL ) return dato;
+    if( LC->nroCelda == pos ) return LC->info;
+    else    return traerDato(LC->sig, pos);
 }
