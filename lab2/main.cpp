@@ -143,12 +143,8 @@ TipoRet createTable(string nombreTabla){
     TipoRet res = OK;
     extern ABBTabla t;               //ABBTabla Global
     ABBTabla auxTabla = t;
-    if( nombreTabla.empty() ){  // Valida que el nombre de la tabla no este vacio
-        cout<<"> Falta el nombre de la tabla a crear"<<endl;
-        res = ERROR;
-        return res;
-    }
     if( miembro(nombreTabla,t) ){ //Si la tabla existe retorna error
+        cout<<"> Ya existe una tabla de nombre "<<nombreTabla<<endl;
         res = ERROR;
         return res;
     }
@@ -204,15 +200,9 @@ TipoRet addCol(string nombreTabla, string nombreCol){
                 }
             }
             //Si no se encontro ninguna columna con el mismo nombre:
-            nuevaColum = new nodoListaColum;
-            auxColum->sig = nuevaColum;
-            nuevaColum->nombre = nombreCol;
-            nuevaColum->sig = NULL;
-            nuevaColum->ant = auxColum;
-            nuevaColum->nroColum = auxColum->nroColum+1;
-            auxTabla->cantColumnas++;
-            if( auxColum->ant == NULL )  // Verifica si la columna a agregar debe ser PK o no
-                nuevaColum->PK = true;
+            auxColum = auxTabla->columna;//Resetea el puntero a la lista columnas
+            agregarColumna(auxColum, nombreCol);
+            auxTabla->cantColumnas = cantColumnas(auxTabla->columna);
             res = OK;
             return res;
         }else{
@@ -241,6 +231,11 @@ TipoRet dropCol(string nombreTabla, string nombreCol){
     auxTabla = traerNodoTabla(nombreTabla, t); //si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
     if( auxTabla!=NULL ){
             auxColum = auxTabla->columna;
+            if( buscarColumna(auxColum, nombreCol) == 1000 ){
+                cout<<"> La columna \""<<nombreCol<<"\" no existe"<<endl;
+                res = ERROR;
+                return res;
+            }
             while( auxColum->sig != NULL ){  //Recorre la lista de columnas y chequea que no exista una columna con el mismo nombre
                 if( auxColum->sig->nombre == nombreCol ){
                     nroColBuscada = buscarColumna(auxColum, nombreCol); //Obtiene el numero de la columna, si no lo encuentra retorna 1000
@@ -262,7 +257,8 @@ TipoRet dropCol(string nombreTabla, string nombreCol){
                     else{
                         borrarColumna( auxColum, nroColBuscada); //Borra la columna
                         ordenarNroColum(auxTabla->columna);    //Ordena los numeros de las columnas
-                        auxTabla->cantColumnas--;         //Decrementa en uno la cantidad de columnas que tiene la tabla
+                        auxTabla->cantColumnas = cantColumnas(auxTabla->columna);
+                        //auxTabla->cantColumnas--;         //Decrementa en uno la cantidad de columnas que tiene la tabla
                         auxTupla = auxTabla->tupla->sig;//arranca en la tupla 1
                         while( auxTupla != NULL ){ //Busca en todas las tuplas
                             auxCelda = auxTupla->celda;
@@ -415,7 +411,7 @@ TipoRet update(string nombreTabla, string condicionModificar, string columnaModi
             return res;
         }
         else{
-            cout<< "No hay campo con ese nombre"<<endl;
+            cout<<"> No hay campo con ese nombre"<<endl;
             res = ERROR;
             borrarListaArg(listaCondicion);
             return res;
@@ -616,27 +612,10 @@ TipoRet select(string nombreTabla2, string valoresColumnas, string nombreTabla1)
     int pos = 0;
     int regCopiados = 0;
     string values;
-    if( valoresColumnas.empty() ){  // Valida qque no este vacio los valores de las columnas
-        cout<<"> No se indico ninguna columna"<<endl;
+    if( miembro( nombreTabla2,t ) ){ //Si el nombre de la tabl2 ya existe retorna error
+        cout<<"> El nombre de la nueva tabla ya existe!" <<endl;
         res = ERROR;
         return res;
-    }
-    if( nombreTabla1.empty() ){  // Valida que el nombre de la tabla1 no este vacio
-        cout<<"> Falta el nombre de la tabla a copiar"<<endl;
-        res = ERROR;
-        return res;
-    }
-    if( nombreTabla2.empty() ){ // Valida que el nombre de la tabla2 no este vacio
-        cout<<"> Falta especificar el nombre de la nueva tabla"<<endl;
-        res = ERROR;
-        return res;
-    }
-    else{
-        if( miembro( nombreTabla2,t ) ){ //Si el nombre de la tabl2 ya existe retorna error
-            cout<<"> El nombre de la nueva tabla ya existe!" <<endl;
-            res = ERROR;
-            return res;
-        }
     }
     ABBTabla auxTabla1 = traerNodoTabla(nombreTabla1, t);
     ListaColum auxColum1 = auxTabla1->columna;
@@ -655,7 +634,6 @@ TipoRet select(string nombreTabla2, string valoresColumnas, string nombreTabla1)
         valoresColumnas = auxColum1->sig->nombre+":"+valoresColumnas;
         borrarListaArg(listaColumnas);
         cargarListaArg(listaColumnas, valoresColumnas,':');
-        cout << "  Ahora se le agrego la pk " << valoresColumnas << '\n';
     }
     //Verifica si el fomato de las columnas es el correcto, con la pk como primer columna
     if( traerParametro(listaColumnas,1) != auxColum1->sig->nombre ){
@@ -670,7 +648,6 @@ TipoRet select(string nombreTabla2, string valoresColumnas, string nombreTabla1)
     ListaColum auxColum2 = auxTabla2->columna;
     cantCampos = lengthArg(listaColumnas);//Obtiene nuevamente la cantidad de capos, por si se le agrego la pk
     for(int i=1; i<=cantCampos; i++ ){ //Crea todos los campos en la tabla 2
-
         agregarColumna(auxColum2, traerParametro(listaColumnas,i));
     }
     auxTabla2->cantColumnas = cantColumnas(auxTabla2->columna); //Cuenta las columnas creadas y actuliza el valor en la tabla2
@@ -812,11 +789,25 @@ void leerComando(ABBTabla t, string comando){
         tabla1 = traerParametro(listaArg, 3);
         tabla2 = traerParametro(listaArg,1);
         condicion = traerParametro(listaArg, 2);
-        res = selectWhere(tabla2, condicion, tabla1);
+        if( tabla1.empty() ){  // Valida que el nombre de la tabla1 no este vacio
+        	cout<<"> Falta el nombre de la tabla a copiar"<<endl;
+        	res = ERROR;
+    	}
+    	if( tabla2.empty() ){ // Valida que el nombre de la tabla2 no este vacio
+        	cout<<"> Falta especificar el nombre de la nueva tabla"<<endl;
+        	res = ERROR;
+    	}
+    	if( condicion.empty() ){ // Valida que la condicion no este vacio
+        	cout<<"> Falta especificar la condicion"<<endl;
+        	res = ERROR;
+    	}
+    	if( !tabla2.empty() && !tabla2.empty() && !condicion.empty() ){
+        	res = selectWhere(tabla2, condicion, tabla1);
+    	}
         if( res == 0 )
             cout<< "> Query OK: Se copio la tabla \""<<tabla1<<"\" en la tabla \""<<tabla2<<"\""<<endl<<endl;
         if( res == 1)
-            cout<< "> Query ERROR: Al copiar la tabla \""<<tabla1<<"\""<<endl<<endl;
+            cout<< "> Query ERROR: Al copiar la tabla"<<endl<<endl;
         return;
     }
 
@@ -824,7 +815,21 @@ void leerComando(ABBTabla t, string comando){
         tabla1 = traerParametro(listaArg,3);
         tabla2 = traerParametro(listaArg,1);
         columnas = traerParametro(listaArg,2);
-        res = select(tabla2, columnas, tabla1);
+        if( columnas.empty() ){  // Valida qque no este vacio los valores de las columnas
+            cout<<"> No se indico ninguna columna"<<endl;
+            res = ERROR;
+        }
+        if( tabla1.empty() ){  // Valida que el nombre de la tabla1 no este vacio
+            cout<<"> Falta el nombre de la tabla a copiar"<<endl;
+            res = ERROR;
+        }
+        if( tabla2.empty() ){ // Valida que el nombre de la tabla2 no este vacio
+            cout<<"> Falta especificar el nombre de la nueva tabla"<<endl;
+            res = ERROR;
+        }
+        if( !tabla1.empty() && !tabla2.empty() && !columnas.empty()  ){
+            res = select(tabla2, columnas, tabla1);
+        }
         if( res == 0 )
             cout<< "> Query OK: Se copio la tabla \""<<tabla1<<"\" en la tabla \""<<tabla2<<"\""<<endl<<endl;
         if( res == 1)
@@ -836,7 +841,21 @@ void leerComando(ABBTabla t, string comando){
         tabla1 = traerParametro(listaArg,1);
         tabla2 = traerParametro(listaArg,2);
         tabla3 = traerParametro(listaArg,3);
-        res = join(tabla1, tabla2, tabla3);
+        if( tabla1.empty() ){  // Valida que el nombre de la tabla1 no este vacio
+        	cout<<"> Falta el nombre de la primer tabla a juntar"<<endl;
+        	res = ERROR;
+    	}
+    	if( tabla2.empty() ){ // Valida que el nombre de la tabla2 no este vacio
+        	cout<<"> Falta el nombre de la segunda tabla a juntar"<<endl;
+        	res = ERROR;
+    	}
+    	if( tabla3.empty() ){ // Valida que la condicion no este vacio
+        	cout<<"> Falta el nombre de la nueva tabla"<<endl;
+        	res = ERROR;
+    	}
+    	if( !tabla1.empty() && !tabla2.empty() && !tabla3.empty() ){
+        	res = join(tabla1, tabla2, tabla3);
+    	}
         if( res == 0 )
             cout<< "> Query OK: Tabla \""<<tabla1<<"\" se junto con \""<<tabla2<<"\""<<endl<<endl;
         if( res == 1)
@@ -846,11 +865,17 @@ void leerComando(ABBTabla t, string comando){
 
     if( sentencia=="createTable" ){
         nombreTabla = traerParametro(listaArg,1);
-        res = createTable(nombreTabla);
+        if( nombreTabla.empty() ){  // Valida que el nombre de la tabla no este vacio
+            cout<<"> Falta el nombre de la tabla a crear"<<endl;
+            res = ERROR;
+        }
+        if( !nombreTabla.empty() ){
+            res = createTable(nombreTabla);
+        }
         if( res == 0 )
             cout<< "> Query OK: Se creo la tabla \""<<nombreTabla<<"\""<<endl<<endl;
         if( res == 1)
-            cout<< "> Query ERROR: La tabla "<<nombreTabla<<" ya existe"<<endl<<endl;
+            cout<< "> Query ERROR: No se creo la tabla"<<endl<<endl;
         return;
     }
 
@@ -858,14 +883,17 @@ void leerComando(ABBTabla t, string comando){
         res = printTables();
         if( res == 0 )
             cout<< "> Query OK"<<endl<<endl;
-        if( res == 1)
-            cout<< "> Query ERROR"<<endl<<endl;
-        return;
     }
 
     if( sentencia=="dropTable" ){ // dropTable( nombreTabla )
         nombreTabla = traerParametro(listaArg,1);
-        res = dropTable(nombreTabla);
+        if( nombreTabla.empty() ){  // Valida que el nombre de la tabla no este vacio
+            cout<<"> Falta el nombre de la tabla"<<endl;
+            res = ERROR;
+        }
+        if( !nombreTabla.empty() ){  // Valida que el nombre de la columna no este vacio
+            res = dropTable(nombreTabla);
+        }
         if( res == 0 )
             cout<< "> Query OK: La Tabla \""<<nombreTabla<<"\" fue eliminada"<<endl<<endl;
         if( res == 1 )
@@ -876,11 +904,21 @@ void leerComando(ABBTabla t, string comando){
     if( sentencia == "addCol" ) {//addCol( nombreTabla, nombreCol )
         nombreTabla = traerParametro(listaArg,1);
         string nombreColumna = traerParametro(listaArg, 2);//obtiene e nombre de la columna ha agregar
-        res = addCol(nombreTabla, nombreColumna);
+        if( nombreTabla.empty() ){  // Valida que el nombre de la tabla no este vacio
+            cout<<"> Falta el nombre de la tabla"<<endl;
+            res = ERROR;
+        }
+        if( nombreColumna.empty() ){  // Valida que el nombre de la columna no este vacio
+            cout<<"> Falta el nombre de la columna"<<endl;
+            res = ERROR;
+        }
+        if( !nombreTabla.empty() && !nombreColumna.empty() ){  // Valida que el nombre de la columna no este vacio
+            res = addCol(nombreTabla, nombreColumna);
+        }
         if(  res == 0 )
             cout<< "> Query OK: La columna \""<<nombreColumna<<"\" ha sido creada"<<endl<<endl;
         if( res == 1)
-            cout<< "> Query ERROR: No se puedo crear la columna \""<<nombreColumna<<"\""<<endl<<endl;
+            cout<< "> Query ERROR: No se pudo crear la columna"<<endl<<endl;
         if( res == 2 )
             cout<< "> Query ERROR: No se realizo la operacion"<<endl<<endl;
         return;
@@ -889,11 +927,21 @@ void leerComando(ABBTabla t, string comando){
     if( sentencia == "dropCol" ){ //   dropCol( nombreTabla, nombreCol)
         nombreTabla = traerParametro(listaArg,1);
         string nombreColumna = traerParametro(listaArg, 2);
-        res = dropCol(nombreTabla, nombreColumna);
+        if( nombreTabla.empty() ){  // Valida que el nombre de la tabla no este vacio
+            cout<<"> Falta el nombre de la tabla a crear"<<endl;
+            res = ERROR;
+        }
+        if( nombreColumna.empty() ){  // Valida que el nombre de la tabla no este vacio
+            cout<<"> Falta el nombre de la columna a eliminar"<<endl;
+            res = ERROR;
+        }
+        if( !nombreTabla.empty() && !nombreColumna.empty() ){
+            res = dropCol(nombreTabla, nombreColumna);
+        }
         if(  res == 0 )
             cout<< "> Query OK: La columna \""<<nombreColumna<<"\" ha sido eliminada"<<endl<<endl;
         if( res == 1)
-            cout<< "> Query ERROR: No se puedo eliminar la columna \""<<nombreColumna<<"\""<<endl<<endl;
+            cout<< "> Query ERROR: No se pudo eliminar la columna"<<endl<<endl;
         if( res == 2 )
             cout<< "> Query ERROR: No se realizo la operacion"<<endl<<endl;
         return;
@@ -902,7 +950,17 @@ void leerComando(ABBTabla t, string comando){
     if( sentencia == "insertInto" ){// insertInto( nombreTabla,valoresTupla")
         nombreTabla = traerParametro(listaArg,1);
         string valoresTupla = traerParametro(listaArg, 2);
-        res = insertInto(nombreTabla, valoresTupla);
+        if( nombreTabla.empty() ){  // Valida que el nombre de la tabla no este vacio
+            cout<<"> Falta el nombre de la tabla a crear"<<endl;
+            res = ERROR;
+        }
+        if( valoresTupla.empty() ){  // Valida que el nombre de la tabla no este vacio
+            cout<<"> No agrego ningun valor"<<endl;
+            res = ERROR;
+        }
+        if( !nombreTabla.empty() && !valoresTupla.empty() ){
+            res = insertInto(nombreTabla, valoresTupla);
+        }
         if(  res == 0 )
             cout<< "> Query OK: Nuevo resitro en la tabla \""<<nombreTabla<<"\""<<endl<<endl;
         if( res == 1)
@@ -912,10 +970,22 @@ void leerComando(ABBTabla t, string comando){
         return;
 
     }
+
     if( sentencia == "deleteFrom" ){ //deleteFrom( nombreTabla, condicionEliminar )
         nombreTabla = traerParametro(listaArg,1);
         string condicionEliminar = traerParametro(listaArg, 2);
-        res = deleteFrom(nombreTabla, condicionEliminar);
+        if( nombreTabla.empty() ){  // Valida que el nombre de la tabla no este vacio
+            cout<<"> Falta el nombre de la tabla"<<endl;
+            res = ERROR;
+        }
+        if( condicionEliminar.empty() ){  // Valida que el nombre de la tabla no este vacio
+            cout<<"> No agrego ninguna condicion valida"<<endl;
+            cout<<"> Puede utilizar la ayuda escrbiendo la palabra 'help'"<<endl;
+            res = ERROR;
+        }
+        if( !nombreTabla.empty() && !condicionEliminar.empty() ){
+            res = deleteFrom(nombreTabla, condicionEliminar);
+        }
         if(  res == 0 )
             cout<< "> Query OK "<<endl<<endl;
         if( res == 1)
@@ -930,7 +1000,26 @@ void leerComando(ABBTabla t, string comando){
         string condModificar = traerParametro(listaArg, 2);
         string columna = traerParametro(listaArg, 3);
         string valoModificar = traerParametro(listaArg, 4);
-        res = update(nombreTabla, condModificar, columna, valoModificar);
+        if( nombreTabla.empty() ){  // Valida que el nombre de la tabla no este vacio
+            cout<<"> Falta el nombre de la tabla"<<endl;
+            res = ERROR;
+        }
+        if( condModificar.empty() ){  // Valida que el nombre de la tabla no este vacio
+            cout<<"> No agrego ninguna condicion valida"<<endl;
+            cout<<"> Puede utilizar la ayuda escrbiendo la palabra 'help'"<<endl;
+            res = ERROR;
+        }
+        if( valoModificar.empty() ){  // Valida que el nombre de la tabla no este vacio
+            cout<<"> No especifico el nuevo valor"<<endl;
+            res = ERROR;
+        }
+        if( columna.empty() ){  // Valida que el nombre de la tabla no este vacio
+            cout<<"> No especifico la columna a actulizar"<<endl;
+            res = ERROR;
+        }
+        if( !nombreTabla.empty() && !condModificar.empty() && !columna.empty() && !valoModificar.empty() ){
+            res = update(nombreTabla, condModificar, columna, valoModificar);
+        }
         if(  res == 0 )
             cout<< "> Query OK"<<endl<<endl;
         if( res == 1)
@@ -946,7 +1035,7 @@ void leerComando(ABBTabla t, string comando){
         if( res == 0 )
             cout<< "> Query OK"<<endl<<endl;
         if( res == 1 )
-            cout<< "> Query ERROR: No se pudo mostrar la tabla"<< nombreTabla <<"\""<<endl<<endl;
+            cout<< "> Query ERROR: No se pudo mostrar la tabla"<<endl<<endl;
         return;
     }
     if( sentencia == "help"  )//  mostrarAyuda()
@@ -958,6 +1047,9 @@ void leerComando(ABBTabla t, string comando){
 
 //Obtiene el parametro en la posicion n de la lista. Nota: debe recibir un n valido
 string traerParametro(ListaArg L, int n){
+    string res="";
+    if( L == NULL )
+        return res;
     if( L!=NULL && L->pos!=n )
         return traerParametro(L->sig, n);
     if( L!=NULL && L->pos == n )
