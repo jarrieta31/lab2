@@ -122,6 +122,7 @@ bool columnasRepetidas(ListaColum L1, ListaColum L2);//Verifica si hay columnas 
 void unirColumnas(ListaColum L1, ListaColum L2, int pos);//Une las columnas de la tabla2 con las columnas de la tabla1 (Los agrega al final de la tabla1 )
 int cantColumnas(ListaColum L);//Cuenta la cantidad de columnas que tiene una tabla
 string traerDato(ListaCelda LC, int pos);//Recibe la posicion y obtiene el dato de la celda indicada
+void imprimirReg(ListaCelda LC);//imprime la lista de celdas que recibe
 
 int main(){
     extern ABBTabla t;
@@ -292,6 +293,11 @@ TipoRet insertInto(string nombreTabla, string valoresTupla){
     cargarListaArg(listaValores, valoresTupla, ':');    //carga los valores en una lista
     auxTabla = traerNodoTabla(nombreTabla, t); //si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
     if( auxTabla != NULL){
+        if( auxTabla->cantColumnas== 0 ){
+            cout<<"> La tabla no tiene columnas creadas"<<endl;
+            res = ERROR;
+            return res;
+        }
         if( auxTabla->cantColumnas == lengthArg(listaValores) ){//Chequea si la cantidad de valores pasados es igual a los campos que tiene a tabla
             auxTupla = auxTabla->tupla;
             string pk = traerParametro(listaValores, 1); //obtiene la pk cursada
@@ -306,6 +312,11 @@ TipoRet insertInto(string nombreTabla, string valoresTupla){
                 return res;
             }
         }
+    }
+    else{
+        cout<<"> La tabla no existe"<<endl;
+        res = ERROR;
+        return res;
     }
 }
 
@@ -333,13 +344,16 @@ TipoRet deleteFrom(string nombreTabla, string condicion){
                 if( operador!='-' ){
                     encontrado = compararCelda(auxCelda, nroColumna, operador, valorFiltro);
                     if( encontrado == true ){
-                        cout<<"> Registro borrado-> "<< auxCelda->sig->info <<":"<< auxCelda->sig->sig->info<<":"<<auxCelda->sig->sig->sig->info  <<endl;
+                        cout<<"> Registro eliminado-> ";
+                        imprimirReg(auxCelda);
                         borrarCeldasTupla(auxCelda);
                         borrarTupla(auxTupla);
                         regAfectados++; //Cuenata los registros encontrados
                     }
                 }
                 if( operador=='-' ){
+                	cout<<"> Registro eliminado-> ";
+                    imprimirReg(auxCelda);
                     borrarCeldasTupla(auxCelda);
                     borrarTupla(auxTupla);
                     regAfectados++;
@@ -1699,4 +1713,21 @@ string traerDato(ListaCelda LC, int pos){
     if( LC == NULL ) return dato;
     if( LC->nroCelda == pos ) return LC->info;
     else    return traerDato(LC->sig, pos);
+}
+
+//Imprime un registro (lista del celdas )
+void imprimirReg(ListaCelda LC){
+    while( LC->sig != NULL ){
+        LC = LC->sig;
+        if( LC->ant->ant == NULL )
+            cout<<"  "<< LC->info;
+        if( LC->nroCelda > 1 && LC->sig != NULL )
+            cout<<":"<< LC->info;
+        if( LC->sig == NULL && LC->nroCelda > 1){
+            cout<<":"<< LC->info <<endl;
+        continue;
+        }
+        if( LC->sig == NULL )
+            cout<<endl;
+    }
 }
